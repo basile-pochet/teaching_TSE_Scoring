@@ -182,6 +182,8 @@ ggplot(mixture_means) +
     geom_point(aes(x = x1_means, y = x2_means, col = Y), size = 3, show.legend = FALSE) +
     scale_colour_manual(values = c("dodgerblue", "orange")) +
     theme_void()
+
+saveRDS(mixture_means, "mixture_means.rds")
 ```
 
 Then the training set together with the "means":
@@ -197,6 +199,8 @@ ggplot(data_mixture_example) +
     geom_point(data = mixture_means, aes(x = x1_means, y = x2_means, col =Y), size = 3, show.legend = FALSE) +
     scale_colour_manual(values = c("dodgerblue", "orange", "dodgerblue", "orange")) +
     theme_void()
+
+#saveRDS(data_mixture_example, "data_mixture_example.rds")
 
 ```
 
