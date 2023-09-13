@@ -1759,6 +1759,23 @@ model_desbois <- glm(Y ~ STATUS + HECTARE + r1 + r3 + r17 + r24 + r28 + r36,
 summary(model_desbois)
 ```
 
+## Exercise
+
+Using the Mixture data set, plot ROC curves for some chosen classifiers:
+
+* implementing from scratch a method for plotting using the course description
+
+* using ROCR package (see ROCR_Talk_Tobias_Sing.ppt for a presentation)
+
+Using the Agriculture Farm Lending data set or R package `rsample` and inspiring from this [book chapter](https://bradleyboehmke.github.io/HOML/process.html):
+
+* briefly explore the data set (the full case study is presented in the `root,+Directeur+de+la+revue,+351-1336-1-CE.pdf`)
+
+* perform train/test split and evaluate ROC / AUC for some `glm()` models of your choice (ie choose manually a subset of variables)
+
+* perform k-fold cross validation and for each fold evaluate ROC / AUC for the same models as before
+
+
 
 # References
 
