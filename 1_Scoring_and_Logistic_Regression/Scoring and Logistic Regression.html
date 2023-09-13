@@ -1025,29 +1025,26 @@ The empirical risk on testing set is
 </details>
 </div>
 <p>The empirical risk on testing set is 0.247.</p>
-<div class="cell" data-hash="Scoring-and-Logistic-Regression_cache/html/unnamed-chunk-26_342ab91915fae77cb25def0fda584780">
+<div class="cell" data-hash="Scoring-and-Logistic-Regression_cache/html/unnamed-chunk-26_2326a2ab520bd0a4012b05764b67277a">
 <details>
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="al">TODO</span><span class="co"> Compare ROC curves of classifiers</span></span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="co"># ROC Curve</span></span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">"ROCR"</span>)    </span>
 <span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="co"># logit</span></span>
-<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">prediction</span>(logit_error_rate<span class="sc">$</span>.fitted, logit_error_rate<span class="sc">$</span>Y)    </span>
-<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>perf <span class="ot">&lt;-</span> <span class="fu">performance</span>(pred, <span class="at">measure =</span> <span class="st">"tpr"</span>, <span class="at">x.measure =</span> <span class="st">"fpr"</span>)     </span>
-<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(perf, <span class="at">col=</span><span class="fu">rainbow</span>(<span class="dv">7</span>), <span class="at">main=</span><span class="st">"ROC curve Admissions"</span>, <span class="at">xlab=</span><span class="st">"Specificity"</span>, </span>
-<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab=</span><span class="st">"Sensitivity"</span>)    </span>
-<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co">#add a 45 degree line</span></span>
-<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="co"># CART</span></span>
-<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">prediction</span>(cart_error_rate<span class="sc">$</span>prob[,<span class="st">"1"</span>] , cart_error_rate<span class="sc">$</span>Y)    </span>
-<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>perf <span class="ot">&lt;-</span> <span class="fu">performance</span>(pred, <span class="at">measure =</span> <span class="st">"tpr"</span>, <span class="at">x.measure =</span> <span class="st">"fpr"</span>) </span>
-<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(perf, <span class="at">col=</span><span class="fu">rainbow</span>(<span class="dv">7</span>), <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">main=</span><span class="st">"ROC curve Admissions"</span>, <span class="at">xlab=</span><span class="st">"Specificity"</span>, </span>
-<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab=</span><span class="st">"Sensitivity"</span>)  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="co"># # logit</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="co"># pred &lt;- prediction(logit_error_rate$.fitted, logit_error_rate$Y)    </span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="co"># perf &lt;- performance(pred, measure = "tpr", x.measure = "fpr")     </span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(perf, col=rainbow(7), main="ROC curve Admissions", xlab="Specificity", </span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="co">#      ylab="Sensitivity")    </span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="co"># abline(0, 1) #add a 45 degree line</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="co"># # CART</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a><span class="co"># pred &lt;- prediction(cart_error_rate$prob[,"1"] , cart_error_rate$Y)    </span></span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a><span class="co"># perf &lt;- performance(pred, measure = "tpr", x.measure = "fpr") </span></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(perf, col=rainbow(7), add = TRUE, main="ROC curve Admissions", xlab="Specificity", </span></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a><span class="co">#      ylab="Sensitivity")  </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output-display">
-<p><img src="Scoring-and-Logistic-Regression_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid" width="672"></p>
-</div>
 </div>
 </section>
 </section>
