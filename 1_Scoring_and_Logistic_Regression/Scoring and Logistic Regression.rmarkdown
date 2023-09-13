@@ -26,6 +26,7 @@ fontsize: 11pt
 library(tidyverse)
 ```
 
+
 # Introduction and vocabulary
 
 ## A reminder (or not) on Supervised Learning
@@ -168,6 +169,7 @@ The task is to create a classifier that, based on the coordinates $x_1$ and $x_2
 
 First we load the data set and plot the "means":
 
+
 ```{r}
 # Simulated mixture (ORANGE/BLUE) from ESLII/ISLR
 load(file='../data/mixture.example.RData')
@@ -184,7 +186,9 @@ ggplot(mixture_means) +
     theme_void()
 ```
 
+
 Then the training set together with the "means":
+
 
 ```{r}
 Y = mixture.example$y
@@ -200,7 +204,9 @@ ggplot(data_mixture_example) +
 
 ```
 
+
 Knowing the generative distribution, we generate a testing set of size 10k (half BLUE, half ORANGE).
+
 
 ```{r}
 # generate new sampling
@@ -219,7 +225,9 @@ new_mixture <- rbind(cbind(x1_blue, x2_blue, Y="BLUE"), cbind(x1_orange, x2_oran
 # head(new_mixture)
 ```
 
+
 We plot the first 250 new observations of each class from the generated testing set:
+
 
 ```{r}
 ggplot(new_mixture[c(1:250,5001:5251),]) + 
@@ -231,11 +239,13 @@ ggplot(new_mixture[c(1:250,5001:5251),]) +
 # new_mixture <- readRDS("new_mixture.rds")
 ```
 
+
 ### Bayes classifier
 
 Knowing the generating distribution we can derive the Bayes classifier (exercise 2.2 [@hastie2009]).
 
 We plot the boundary decision in grey:
+
 
 ```{r}
 grid <- expand.grid(x1 = seq(-2.6, 4.2, .05), x2 = seq(-2.0, 2.9, .05)) %>% as_tibble()
@@ -266,7 +276,9 @@ scale_colour_manual(values = c("dodgerblue", "orange")) +
 theme_void()
 ```
 
+
 We estimate Bayes risk on the testing data set simulated before (10k BLUE/ORANGE dots).
+
 
 ```{r}
 bayes_error_rate <- new_mixture %>%
@@ -288,6 +300,7 @@ bayes_train_risk <- bayes_error_rate_train %>%
         pull(l01)
 ```
 
+
 We get a value of `r round(bayes_test_risk,3)` for the Bayes risk (in line with [@hastie2009 Figure 2.4 Misclassification curves]).
 
 We give below a brief tour showing how common classifiers perform.
@@ -295,6 +308,7 @@ We give below a brief tour showing how common classifiers perform.
 ### Logistic Regression classifier
 
 We plot below the linear decision boundary given by a Logistic Regression vs Bayes:
+
 
 ```{r}
 grid <- expand.grid(x1 = seq(-2.6, 4.2, .05), x2 = seq(-2.0, 2.9, .05)) %>% as_tibble()
@@ -325,7 +339,9 @@ scale_colour_manual(values = c("dodgerblue", "orange")) +
 theme_void()
 ```
 
+
 We add a sample of the testing set to the preceding graph:
+
 
 ```{r}
 grid <- broom::augment(mixture_example_logit, 
@@ -370,6 +386,7 @@ logit_error_rate <- broom::augment(mixture_example_logit,
 logit_risk <- logit_error_rate %>% summarise(l01 = mean(l01))
 ```
 
+
 The empirical risk on testing set is `r round(logit_risk, 3)`.
 
 ### Nonparametric (splines) Logistic Regression classifier
@@ -379,6 +396,7 @@ A popular method to move beyond linearity is to transform variables, for example
 This can achieve more flexibility at the decision boundary.
 
 Using natural splines in $x_1$ and $x2$:
+
 
 ```{r}
 library(splines)
@@ -428,9 +446,11 @@ logit_splines_add_error_rate <- logit_splines_add_error_rate  %>%
     pull(l01)
 ```
 
+
 The empirical risk on testing set is `r round(logit_splines_add_error_rate, 3)`.
 
 Using the interactions of splines in $x_1$ and $x2$:
+
 
 ```{r}
 
@@ -516,6 +536,7 @@ logit_splines_add_tens_error_rate <- logit_splines_add_tens_error_rate  %>%
 
 ```
 
+
 The empirical risk on testing set is `r round(logit_splines_add_tens_error_rate, 3)`.
 
 ### Logistic regression with binning:
@@ -523,6 +544,7 @@ The empirical risk on testing set is `r round(logit_splines_add_tens_error_rate,
 It is usual, for example in the context of banking, to discretize or categorize numerical variables (a.k.a binning).
 
 Here we use a simple decile binning on $x_1$ and $x_2$
+
 
 ```{r}
 grid <- expand.grid(x1 = seq(-2.6, 4.2, .05), x2 = seq(-2.0, 2.9, .05)) %>% as_tibble()
@@ -620,17 +642,21 @@ logit_binned_error_rate <- logit_binned_error_rate  %>%
     pull(l01)
 ```
 
+
 The empirical risk on testing set is `r round(logit_binned_error_rate, 3)`.
+
 
 ```{r}
 # Optionnal - plot the graph for logistic regression using  binning + "WOE/IV" feature engineering (TODO if shown in class)
 ```
+
 
 ### K-Nearest Neighbors Algorithm
 
 k-NN is a non-parametric algorithm. Given a new observation, it finds in the training set the k closest points (given a certain distance) and predicts using a majority vote.
 
 We show below the boundary decision for $k=15$:
+
 
 ```{r}
 library(class)
@@ -726,9 +752,11 @@ knn_error_rate <- (table_test[[2]] + table_test[[3]]) /
 (table_test[[1]] + table_test[[2]] + table_test[[3]] + table_test[[4]])
 ```
 
+
 The empirical risk on testing set is `r round(knn_error_rate, 3)`.
 
 We vary $k$ and show the empirical risks on training and testing sets together with Bayes risk:
+
 
 ```{r}
 
@@ -792,9 +820,11 @@ labs(col = NULL)
 
 ```
 
+
 ### Decision Trees (CART)
 
 To finish our tour, we show the result of a recursive partition of the plan using Decision Trees techniques:
+
 
 ```{r}
 library(rpart)
@@ -843,7 +873,9 @@ cart_risk <- cart_error_rate  %>%
     pull(l01)
 ```
 
+
 The empirical risk on testing set is `r round(cart_risk, 3)`.
+
 
 ```{r}
 # TODO Compare ROC curves of classifiers
@@ -864,6 +896,7 @@ library("ROCR")
 #      ylab="Sensitivity")  
 
 ```
+
 
 ## Scoring
 
@@ -1020,6 +1053,7 @@ The ROC curve for a random score is the first bisector $(0,0)$ to $(1,1)$.
 
 @fig-roc-perfect-random shows the two curves.
 
+
 ```{r, warning=FALSE}
 #| label: fig-roc-perfect-random
 #| fig-cap: "ROC curves of a perfect Score (solid, blue) and a random Score (dashed, orange)"
@@ -1049,6 +1083,7 @@ ggplot() +
     theme_bw() 
 
 ```
+
 
 The ROC curves can be summarized to generate numeric criteria such as the AUC (Area Under Curve).
 
@@ -1088,6 +1123,7 @@ The approach we follow is similar to [@hosmer2013] or [@cornillon2019]. Both boo
 
 We can start to explore the Default data with a scatterplot (@fig-default_balance-scatterplot) of the target variable (***default***) with respect to a predictor (***balance***):
 
+
 ```{r}
 #| label: fig-default_balance-scatterplot
 #| fig-cap: "Scatterplot of variable ***default*** with respect to credit card ***balance*** for 10000 customers"
@@ -1100,14 +1136,18 @@ ggplot(default_data, aes(x=balance, y=default)) +
 geom_point(alpha=0.2)
 ```
 
+
 In this scatterplot, all points fall on one of two parallel lines representing the absence (No) or occurrence (Yes) of ***default***. We "jitter" the data vertically to avoid overplotting. The plot below shows that the response variable is imbalanced towards the absence of default:
+
 
 ```{r}
 ggplot(default_data, aes(x=balance, y=default)) +
 geom_jitter(alpha=0.2, height=0.2)
 ```
 
+
 We also show the boxplots of credit cards ***balance*** with respect to ***default*** status:
+
 
 ```{r}
 #| label: fig-balance_default-boxplot
@@ -1117,9 +1157,11 @@ ggplot(default_data,
 geom_boxplot()
 ```
 
+
 We can see from @fig-default_balance-scatterplot and @fig-balance_default-boxplot that default tends to be more prevalent for accounts with a high balance. However it is difficult to guess a simple relationship between default and balance.
 
 To investigate further we discretise the balance variables by classes of width $300\$$ and compute the mean of response variable (***default*** is Yes) within each balance class:
+
 
 ```{r, message = FALSE}
 class_width <- 300
@@ -1139,6 +1181,7 @@ class_width <- 300
     mutate(`Mean(default)` = round(Yes / (Yes + No), 4)))
 ```
 
+
 In the following we map, by convention and for better readability, the response variable $Y \in\{Yes, No\}$ to $\{0, 1\}$:
 
 $$
@@ -1149,6 +1192,7 @@ Y = \left\{ \begin{array}{ll}
 $$
 
 Then we plot the mean of default (in red) within each balance class (of width $300\$$):
+
 
 ```{r}
 #| label: fig-balance_default-scatterplot-occurrence
@@ -1162,6 +1206,7 @@ Then we plot the mean of default (in red) within each balance class (of width $3
               color = 'coral',
               linewidth=1.25))
 ```
+
 
 The relationship between the mean occurrence of ***default*** and ***balance*** is easier to read.
 
@@ -1179,6 +1224,7 @@ where $\mu_\beta$ is a **sigmoid** function in $[0,1]$.
 
 The Logistic Regression model uses the **sigmoid** function $\sigma: x \to\sigma(x)=\frac{e^{x}} { 1 + e^{x} }$ also known as logistic function.
 
+
 ```{r}
 (default_occurrence +
  geom_smooth(method = "glm", 
@@ -1193,7 +1239,9 @@ The Logistic Regression model uses the **sigmoid** function $\sigma: x \to\sigma
               linewidth=1.25))
 ```
 
+
 Another approach would have been to treat $Y$ as a quantitative response variable and fit a simple linear model:
+
 
 ```{r}
 linear <- lm(default ~ balance, data = default_data %>% mutate(default = if_else(default == "Yes", 1, 0)))
@@ -1226,6 +1274,7 @@ beta <- coeff_lm["balance"]
  #             linetype = "dotted")
 
 ```
+
 
 @fig-balance_default-scatterplot-lmfit shows that a linear model fails to fit the data. In particular, for low credit card balances the linear model shows a "negative probability of default". This is quite prominent here as response variable is imbalanced towards the No default category. For the same reasons, the least square method fails to correctly fit the category of interest (less than 0.25 probability).
 
@@ -1308,6 +1357,7 @@ We also need to specify the distribution for the conditional $Y$ values (binomia
 
 For our example:
 
+
 ```{r}
 # | code-fold: false
 glm_default <- glm(default ~ 1 + student + balance + income,
@@ -1320,20 +1370,25 @@ glm_default <- glm(default ~ .,
  
 ```
 
+
 The command `summary` produces result summaries of the fitted model:
+
 
 ```{r}
 # | code-fold: false
 summary(glm_default)
 ```
 
+
 We will see later how to interpret or understand what is printed
 
 A coefficient-wise output of the model can be obtained as a `tibble` using `tidy()` from package `broom`:
 
+
 ```{r}
 broom::tidy(glm_default)
 ```
+
 
 Based on this output, the fitted model is (we have re-scaled balance and income for better readability):
 
@@ -1491,6 +1546,7 @@ $$
 
 We show below a naive implementation of Newton-Raphson method to estimate $\beta$ (also known as Fisher Scoring algorithm in the context of Logistic Regression)
 
+
 ```{r}
 #| code-fold: false
 # We put the data frame in matrix form
@@ -1538,15 +1594,19 @@ lr_solve <- function(X, Y, beta, nb_iter, tol){
 sol <- lr_solve(X, Y, beta, nb_iter, tol)
 ```
 
+
 We verify that R `glm()` and our algorithm give the same coefficients:
 
 -   Newton-Raphson:
+
 
 ```{r}
 print(sol$beta)
 ```
 
+
 -   R `glm()`:
+
 
 ```{r}
 glm_bal_inc <- glm(default ~ balance + income,
@@ -1556,6 +1616,7 @@ glm_bal_inc <- glm(default ~ balance + income,
 print(coef(glm_bal_inc ))
 
 ```
+
 
 In the next sections (Interpretation, Confidence intervals, Tests) we will try to understand the outputs of the `glm()` function from a statistical viewpoint.
 
@@ -1589,6 +1650,7 @@ To conclude on the numerical aspects, we signal a special and extreme case where
 
 We simulate a perfectly separated data set. Here $X\in \mathbb [-1,1]$ and $Y\in\{0,1\}$:
 
+
 ```{r}
 set.seed(1987)
 X <- c(runif(n = 50, min = -1, max = 0),
@@ -1599,7 +1661,9 @@ tbl_separated <- tibble(X,Y)
 ggplot(tbl_separated) + geom_point(aes(X, Y))
 ```
 
+
 In this setting the iterative algorithm fails to converge and coefficient "saturates" to a high/low value (while it should go to infinite):
+
 
 ```{r}
 glm_separated <- glm(Y ~ X,
@@ -1616,7 +1680,9 @@ ggplot(separated_fit) +
     geom_line(aes(X,.fitted))
 ```
 
+
 Now we slightly modify the data set, changing a $y$ observation with $x\in[-1,0]$ from $0$ to $1$.
+
 
 ```{r}
 Y1 <- Y
@@ -1625,7 +1691,9 @@ tbl_overlap <- tibble(X,Y1)
 ggplot(tbl_overlap) + geom_point(aes(X, Y1))
 ```
 
+
 The iterative algorithm converges again and the impact on the Scoring function (i.e. $\mathbb{P}[Y=1|X=x)$) and the decision rule (shifting left below $X=O$) is not negligible for a one point change:
+
 
 ```{r}
 glm_overlap <- glm(Y1 ~ X,
@@ -1636,6 +1704,7 @@ ggplot(overlap_fit) +
     geom_point(aes(X, Y1)) +
     geom_line(aes(X,.fitted))
 ```
+
 
 Nonetheless the case we described is very unlikely to happen in a real life setting, and a good data set exploration should avoid such trap. More details can be found in the document `Separation and Convergence Issues in Logistic Regression.pdf`
 
@@ -1669,6 +1738,7 @@ Estimating $\beta$ by maximizing the log-likelihood is equivalent to minimizing 
 
 https://archive.ics.uci.edu/ml/datasets/statlog+(german+credit+data) https://www.r-bloggers.com/2016/03/classification-on-the-german-credit-database/ Also available in scorecard package
 
+
 ```{r, message=FALSE}
 load('../data/germancredit.RData')
 
@@ -1697,7 +1767,9 @@ germancredit_clean <- germancredit %>%
 glimpse(germancredit_clean)
 ```
 
+
 Description of the data
+
 
 ```{r}
 vars_quanti <- names(germancredit_clean %>% select_if(is.numeric))
@@ -1739,7 +1811,9 @@ germancredit_glm <- glm(creditability ~ . , data = germancredit_clean, family = 
 summary(germancredit_glm)
 ```
 
+
 ### Agriculture Farm Lending
+
 
 ```{r}
 # package used to import spss file
@@ -1758,6 +1832,7 @@ model_desbois <- glm(Y ~ STATUS + HECTARE + r1 + r3 + r17 + r24 + r28 + r36,
 
 summary(model_desbois)
 ```
+
 
 ## Exercise
 
@@ -1781,3 +1856,4 @@ Using the Agriculture Farm Lending data set or R package `rsample` and inspiring
 
 ::: {#refs}
 :::
+
