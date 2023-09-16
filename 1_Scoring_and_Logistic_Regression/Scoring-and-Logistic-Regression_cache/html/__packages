@@ -13,3 +13,6 @@ rpart
 rpart.plot
 ROCR
 foreign
+Matrix
+glmnet
+glmnetUtils
