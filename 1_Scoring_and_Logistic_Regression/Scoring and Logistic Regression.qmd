@@ -1346,14 +1346,15 @@ $$ with $Y=(y_1,\cdots,y_n)$ and $\beta=(\beta_1,\cdots,\beta_p)$.
 
 We seek to maximize the likelihood function over $\beta$, it is equivalent but easier to maximize the log-likelihood:
 
-\$\$
+$$
 
 \begin{align}
 \ell(Y,\beta)=\log L(Y,\beta) &=\sum_{i=1}^n \left(y_i \log(p_{\beta}(x_i))+(1-y_i) \log(1- p_{\beta}(x_i))\right) \\
                               &=\sum_{i=1}^{n} \left(y_i \log(\frac{p_{\beta}(x_i)}{1-p_{\beta}(x_i)})+\log(1- p_{\beta}(x_i))\right)\\ 
                               &=\sum_{i=1}^{n} \left(y_i x_i^T\beta -\log(1 + \exp(x_i^T\beta)\right)
 
-\end{align} \$\$
+\end{align} 
+$$
 
 If the MLE $\hat\beta$ exists, the gradient of log-likelihood satisfies (first order necessary condition):
 
@@ -1628,12 +1629,13 @@ Nonetheless the case we described is very unlikely to happen in a real life sett
 
 We have another look at the log-likelihood equation stated before, we have:
 
-\$\$ \begin{align}
+$$ \begin{align}
 
 \ell(Y,\beta)=\log L(Y,\beta) &=\sum_{i=1}^n \left(y_i \log(p_{\beta}(x_i))+(1-y_i) \log(1- p_{\beta}(x_i))\right) \\
                               &=-\sum_{i=1}^{n} \ell_{logistic} \left(p_{\beta}(x_i),y_i\right) \\
                               &= -n\hat{\mathrm R}(p_\beta) 
-\end{align} \$\$
+\end{align} 
+$$
 
 where $\ell_{logistic}: \{0,1\}\times \{0,1\} \to \mathbb R^+$:
 
@@ -1644,7 +1646,7 @@ $$
 \end{array} \right.
 $$
 
-and \$\hat{\mathrm R}(p\_\beta) \$ is the empirical risk on the training set.
+and $\hat{\mathrm R}(p\_\beta) $ is the empirical risk on the training set.
 
 Estimating $\beta$ by maximizing the log-likelihood is equivalent to minimizing with respect to $\beta$ the empirical risk of $p_\beta$ for the logistic loss. Note that usually in the context of machine learning and logistic loss, the output $Y$ is relabeled to $\{-1,1\}$
 
