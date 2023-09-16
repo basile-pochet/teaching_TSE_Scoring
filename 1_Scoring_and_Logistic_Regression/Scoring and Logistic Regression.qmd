@@ -1437,7 +1437,7 @@ $$
 We obtain that in matrix form:
 
 $$
-H(\beta)=\nabla^2\ell(Y,\beta)=X^T W_\beta X
+H(\beta)=\nabla^2\ell(Y,\beta)=-X^T W_\beta X
 $$
 
 where:
