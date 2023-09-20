@@ -2089,8 +2089,8 @@ Number of Fisher Scoring iterations: 7</code></pre>
 </div>
 <p>In R the package <code>glmnet</code> implements the Lasso, Ridge and Elastic Net penalties in particular for Logistic Regression:</p>
 <p>For example below the lasso “path” of coefficients when increasing <span class="math inline">\(\lambda\)</span> (from right to left).</p>
-<div class="cell" data-hash="Logistic_Regression_cache/html/unnamed-chunk-64_5c22b7fbfeea470d7a0e755e17f6dd95">
-<details>
+<div class="cell" data-hash="Logistic_Regression_cache/html/unnamed-chunk-64_a6453e43e7cf4afdb91796fde7e790ee">
+<details open="">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(glmnet)</span>
 <span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(glmnetUtils)</span>
@@ -2103,16 +2103,16 @@ Number of Fisher Scoring iterations: 7</code></pre>
 <div class="cell-output-display">
 <p><img src="Logistic_Regression_files/figure-html/unnamed-chunk-64-1.png" class="img-fluid" width="672"></p>
 </div>
-<details>
+<details open="">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a><span class="co"># X &lt;- glmnet::makeX(train = don_desbois %&gt;% dplyr::select(-Y), sparse = TRUE)</span></span>
 <span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a><span class="co"># desbois_lasso &lt;- glmnet::cv.glmnet(X, Y, data=don_desbois, family="binomial", alpha=1, type.measure = "auc")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>Note that the penalized regression solutions are sensitive to the scaling of the inputs, and so one normally standardizes the inputs before solving.</p>
-<p>We can visualise for each <span class="math inline">\(\lambda\)</span> the value of coefficients:</p>
-<div class="cell" data-hash="Logistic_Regression_cache/html/unnamed-chunk-65_36c33233439581aff2442527ca47a823">
-<details>
+<p>We can extract for each <span class="math inline">\(\lambda\)</span> the value of coefficients:</p>
+<div class="cell" data-hash="Logistic_Regression_cache/html/unnamed-chunk-65_8efc547de143e39c83c5e154ef76a16a">
+<details open="">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a>lasso_result <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(<span class="fu">as.matrix</span>(<span class="fu">cbind</span>(desbois_lasso<span class="sc">$</span>lambda, <span class="fu">t</span>(desbois_lasso<span class="sc">$</span>beta))))</span>
 <span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(lasso_result) <span class="ot">&lt;-</span>  <span class="fu">c</span>(<span class="st">"lambda"</span>, <span class="fu">row.names</span>(desbois_lasso<span class="sc">$</span>beta))</span>
@@ -2128,8 +2128,8 @@ Number of Fisher Scoring iterations: 7</code></pre>
 </div>
 </div>
 <p><code>glmnet</code> also provides an automatic and efficient procedure to select <span class="math inline">\(lambda\)</span> implementing K-fold Cross-Validation (see next paragraph):</p>
-<div class="cell" data-hash="Logistic_Regression_cache/html/unnamed-chunk-66_b741e89f031936d9db6f5e5f19719867">
-<details>
+<div class="cell" data-hash="Logistic_Regression_cache/html/unnamed-chunk-66_b69b6c9ef00e72bc406303c3d6087782">
+<details open="">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a>desbois_lasso_cv <span class="ot">&lt;-</span> glmnetUtils<span class="sc">::</span><span class="fu">cv.glmnet</span>(Y <span class="sc">~</span> ., <span class="at">data=</span>don_desbois, <span class="at">family=</span><span class="st">"binomial"</span>, <span class="at">alpha=</span><span class="dv">1</span>, <span class="at">type.measure =</span> <span class="st">"auc"</span>)</span>
 <span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a>lasso_coeffs <span class="ot">&lt;-</span> <span class="fu">coef</span>(desbois_lasso_cv, <span class="at">s =</span> <span class="st">"lambda.1se"</span>)</span>
@@ -2658,7 +2658,7 @@ $ Y       &lt;fct&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 <p><img src="Logistic_Regression_files/figure-html/unnamed-chunk-77-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
-<p>k-fold cross validation manually</p>
+<p>Implement k-fold cross validation (using AUC as metric) manually</p>
 <div class="cell" data-hash="Logistic_Regression_cache/html/unnamed-chunk-78_2e6233026a55ae22cfd45e912986f847">
 <details open="">
 <summary>Code</summary>

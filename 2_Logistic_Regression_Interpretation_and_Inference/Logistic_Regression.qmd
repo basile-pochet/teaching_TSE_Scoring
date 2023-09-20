@@ -1462,6 +1462,7 @@ In R the package `glmnet` implements the Lasso, Ridge and Elastic Net penalties 
 For example below the lasso "path" of coefficients when increasing $\lambda$ (from right to left).
 
 ```{r}
+#| code-fold: show
 library(glmnet)
 library(glmnetUtils)
 
@@ -1475,9 +1476,10 @@ plot(desbois_lasso)
 ```
 Note that the penalized regression solutions are sensitive to the scaling of the inputs, and so one normally standardizes the inputs before solving. 
 
-We can visualise for each $\lambda$ the value of coefficients:
+We can extract for each $\lambda$ the value of coefficients:
 
 ```{r}
+#| code-fold: show
 lasso_result <- as_tibble(as.matrix(cbind(desbois_lasso$lambda, t(desbois_lasso$beta))))
 names(lasso_result) <-  c("lambda", row.names(desbois_lasso$beta))
 lasso_result
@@ -1486,6 +1488,7 @@ lasso_result
 `glmnet` also provides an automatic and efficient procedure to select $lambda$ implementing K-fold Cross-Validation (see next paragraph):
 
 ```{r}
+#| code-fold: show
 desbois_lasso_cv <- glmnetUtils::cv.glmnet(Y ~ ., data=don_desbois, family="binomial", alpha=1, type.measure = "auc")
 lasso_coeffs <- coef(desbois_lasso_cv, s = "lambda.1se")
 data.frame(name = lasso_coeffs@Dimnames[[1]][lasso_coeffs@i + 1], coefficient = lasso_coeffs@x)
@@ -1797,7 +1800,7 @@ ggplot(cv_out_plot , aes(x=1-sens, y=spec, group=id, colour=col)) +
   labs(x="1-Sensitivity", y="Specificity", colour="", alpha="", size="")
 ```
 
-k-fold cross validation manually
+Implement k-fold cross validation (using AUC as metric) manually
 
 ```{r}
 #| code-fold: show
