@@ -887,12 +887,13 @@ lower <- bal_std_estimate - 1.96 * bal_std_error
 (bal_confint <- c(lower, upper))
 ```
 
+The following `R` command provides confidence interval of estimators using a more advance profile likelihood method:
 ```{r}
 #| code-fold: show
 confint(glm_bal_inc)
 ```
 
-https://stats.stackexchange.com/questions/5304/why-is-there-a-difference-between-manually-calculating-a-logistic-regression-95
+More details on profile likelihood method can be found [here](https://stats.stackexchange.com/questions/5304/why-is-there-a-difference-between-manually-calculating-a-logistic-regression-95).
 
 ### Tests on model coefficients
 
