@@ -1294,7 +1294,7 @@ We also need to specify the distribution for the conditional $Y$ values (binomia
 For our example:
 
 ```{r}
-# | code-fold: false
+#| code-fold: show
 glm_default <- glm(default ~ 1 + student + balance + income,
                    data = default_data,
                    family = binomial(link = "logit"))
@@ -1308,7 +1308,7 @@ glm_default <- glm(default ~ .,
 The command `summary` produces result summaries of the fitted model:
 
 ```{r}
-# | code-fold: false
+#| code-fold: show
 summary(glm_default)
 ```
 
@@ -1347,12 +1347,10 @@ $$ with $Y=(y_1,\cdots,y_n)$ and $\beta=(\beta_1,\cdots,\beta_p)$.
 We seek to maximize the likelihood function over $\beta$, it is equivalent but easier to maximize the log-likelihood:
 
 $$
-
 \begin{align}
 \ell(Y,\beta)=\log L(Y,\beta) &=\sum_{i=1}^n \left(y_i \log(p_{\beta}(x_i))+(1-y_i) \log(1- p_{\beta}(x_i))\right) \\
-                              &=\sum_{i=1}^{n} \left(y_i \log(\frac{p_{\beta}(x_i)}{1-p_{\beta}(x_i)})+\log(1- p_{\beta}(x_i))\right)\\ 
+                              &=\sum_{i=1}^{n} \left(y_i \log(\frac{p_{\beta}(x_i)}{1-p_{\beta}(x_i)})+\log(1- p_{\beta}(x_i))\right) \\ 
                               &=\sum_{i=1}^{n} \left(y_i x_i^T\beta -\log(1 + \exp(x_i^T\beta)\right)
-
 \end{align} 
 $$
 
@@ -1442,7 +1440,8 @@ $$
 
 where:
 
-$$ \begin{align}
+$$
+\begin{align}
 W_\beta = \begin{pmatrix}
 p_\beta(x_1)(1-p_\beta(x_1)) & \cdots & \cdots\\
 \vdots  & \ddots & \vdots \\
@@ -1478,7 +1477,7 @@ $$
 We show below a naive implementation of Newton-Raphson method to estimate $\beta$ (also known as Fisher Scoring algorithm in the context of Logistic Regression)
 
 ```{r}
-#| code-fold: false
+#| code-fold: show
 # We put the data frame in matrix form
 # also adding an intercept
 X <- cbind(rep(1, nrow(default_data)),
@@ -1629,8 +1628,8 @@ Nonetheless the case we described is very unlikely to happen in a real life sett
 
 We have another look at the log-likelihood equation stated before, we have:
 
-$$ \begin{align}
-
+$$
+\begin{align}
 \ell(Y,\beta)=\log L(Y,\beta) &=\sum_{i=1}^n \left(y_i \log(p_{\beta}(x_i))+(1-y_i) \log(1- p_{\beta}(x_i))\right) \\
                               &=-\sum_{i=1}^{n} \ell_{logistic} \left(p_{\beta}(x_i),y_i\right) \\
                               &= -n\hat{\mathrm R}(p_\beta) 
@@ -1646,7 +1645,7 @@ $$
 \end{array} \right.
 $$
 
-and $\hat{\mathrm R}(p\_\beta) $ is the empirical risk on the training set.
+and $\hat{\mathrm {R}}(p_\beta) $ is the empirical risk on the training set.
 
 Estimating $\beta$ by maximizing the log-likelihood is equivalent to minimizing with respect to $\beta$ the empirical risk of $p_\beta$ for the logistic loss. Note that usually in the context of machine learning and logistic loss, the output $Y$ is relabeled to $\{-1,1\}$
 
@@ -1756,263 +1755,6 @@ model_desbois <- glm(Y ~ OWNLAND + r17,
 summary(model_desbois)
 
 ```
-```{r}
-
-don_desbois_winsorized <- don_desbois %>%
-    mutate(across(r1:r37, ~ DescTools::Winsorize(.x , probs = c(0.025, 0.975))))
-
-# data_afl <- don_desbois_winsorized
-data_afl <- don_desbois
-#define intercept-only model
-intercept_only <- glm(Y ~ 1, data=data_afl, family="binomial")
-
-#define model with all predictors
-all <- glm(Y ~ ., data=data_afl %>% select(Y, starts_with('r')), family="binomial")
-```
-
-Manual likelihood-ratio-test-based forward selection (as described in Desbois)
-http://rstudio-pubs-static.s3.amazonaws.com/2899_a9129debf6bd47d2a0501de9c0dc583d.html
-
-```{r}
-first_step <- add1(intercept_only, scope = formula(all), test = "LRT")
-first_step <- first_step %>% 
-    tibble() %>%
-    add_column(variable=row.names(first_step)) %>% 
-    arrange(desc(LRT))
-first_step
-```
-`r1` is the most significant variable in the first step
-
-```{r}
-second_step <- add1(update(intercept_only, ~. + r1), scope = formula(all), test = "LRT")
-second_step <- second_step %>% 
-    tibble() %>%
-    add_column(variable=row.names(second_step)) %>% 
-    arrange(desc(LRT))
-second_step
-```
-`r21` is the most significant variable in the second step (it differs from the article where r32 is selected (p70, the LRT is the same for r32 (129.65) but r21 and r14 have higher LRT))
-
-
-```{r}
-third_step <- add1(update(intercept_only, ~. + r1 + r21), scope = formula(all), test = "LRT")
-third_step <- third_step %>% 
-    tibble() %>%
-    add_column(variable=row.names(third_step)) %>% 
-    arrange(desc(LRT))
-third_step
-```
-
-`r14` is the most significant variable in the third step
-
-```{r}
-fourth_step <- add1(update(intercept_only, ~. + r1 + r21 + r14), scope = formula(all), test = "LRT")
-fourth_step <- fourth_step %>% 
-    tibble() %>%
-    add_column(variable=row.names(fourth_step)) %>% 
-    arrange(desc(LRT))
-fourth_step
-```
-`r17` is the most significant variable in the fourth step
-
-```{r}
-fifth_step <- add1(update(intercept_only, ~. + r1 + r21 + r14 + r17), scope = formula(all), test = "LRT")
-fifth_step <- fifth_step %>% 
-    tibble() %>%
-    add_column(variable=row.names(fifth_step)) %>% 
-    arrange(desc(LRT))
-fifth_step
-```
-
-`r24` is the most significant variable in the fifth step
-
-```{r}
-sixth_step <- add1(update(intercept_only, ~. + r1 + r21 + r14 + r17 + r24), scope = formula(all), test = "LRT")
-sixth_step <- sixth_step %>% 
-    tibble() %>%
-    add_column(variable=row.names(sixth_step)) %>% 
-    arrange(desc(LRT))
-sixth_step
-```
-`r11` is the most significant variable in the sixth step
-
-```{r, warning=FALSE}
-# perform forward stepwise regression
-forward_aic <- step(intercept_only, direction='forward', test = 'LRT', scope=formula(all), k=2, trace = FALSE)
-summary(forward_aic)
-
-```
-
-
-Manual likelihood-ratio-test-based forward selection with override (ie selecting the same variables as Desbois if needed)
-
-
-```{r}
-first_step_article <- add1(intercept_only, scope = formula(all), test = "LRT")
-first_step_article <- first_step_article %>% 
-    tibble() %>%
-    add_column(variable=row.names(first_step_article)) %>% 
-    arrange(desc(LRT))
-first_step
-```
-`r1` is the most significant variable in the first step
-
-```{r}
-second_step_article <- add1(update(intercept_only, ~. + r1), scope = formula(all), test = "LRT")
-second_step_article <- second_step_article %>% 
-    tibble() %>%
-    add_column(variable=row.names(second_step_article)) %>% 
-    arrange(desc(LRT))
-second_step
-```
-
-In the article `r32` is the most significant variable in the second step: we choose `r32`instead of `r21`. 
-
-
-```{r}
-third_step <- add1(update(intercept_only, ~. + r1 + r32), scope = formula(all), test = "LRT")
-third_step <- third_step %>% 
-    tibble() %>%
-    add_column(variable=row.names(third_step)) %>% 
-    arrange(desc(LRT))
-third_step
-```
-
-Like in the article `r14` is the most significant variable in the third step (with same LRT)
-
-```{r}
-fourth_step <- add1(update(intercept_only, ~. + r1 + r32 + r14), scope = formula(all), test = "LRT")
-fourth_step <- fourth_step %>% 
-    tibble() %>%
-    add_column(variable=row.names(fourth_step)) %>% 
-    arrange(desc(LRT))
-fourth_step
-```
-In the article `r17` is the most significant variable in the fourth step: : we choose `r17`instead of `r18`. 
-
-```{r}
-fifth_step <- add1(update(intercept_only, ~. + r1 + r32 + r14 + r17), scope = formula(all), test = "LRT")
-fifth_step <- fifth_step %>% 
-    tibble() %>%
-    add_column(variable=row.names(fifth_step)) %>% 
-    arrange(desc(LRT))
-fifth_step
-```
-
-Like in the article `r36` is the most significant variable in the fifth step (with same LRT)
-
-```{r}
-sixth_step <- add1(update(intercept_only, ~. + r1 + r32 + r14 + r17 + r36), scope = formula(all), test = "LRT")
-sixth_step <- sixth_step %>% 
-    tibble() %>%
-    add_column(variable=row.names(sixth_step)) %>% 
-    arrange(desc(LRT))
-sixth_step
-```
-Like in the article `r12` is the most significant variable in the sixth step (with same LRT)
-
-
-R performs automated AIC/BIC based vairable selections using (step)
-
-```{r}
-#perform forward stepwise regression
-forward_aic <- step(intercept_only, direction='forward', test = 'LRT', scope=formula(all), k=2, trace = FALSE)
-
-#perform forward stepwise regression
-forward_bic <- step(intercept_only, direction='forward', test = 'LRT', scope=formula(all), k=log(nrow(don_desbois)), trace = FALSE)
-```
-```{r}
-summary(forward_bic)
-```
-
-
-```{r}
-#define intercept-only model
-intercept_only_w <- glm(Y ~ 1, data=don_desbois_winsorized, family="binomial")
-
-#define model with all predictors
-all_w <- glm(Y ~ ., data=don_desbois_winsorized, family="binomial")
-
-#perform forward stepwise regression AIC
-forward_aic_w <- step(intercept_only_w, direction='forward', scope=formula(all_w), k=2, trace = FALSE)
-
-#perform forward stepwise regression BIC
-forward_bic_w <- step(intercept_only_w, direction='forward', scope=formula(all_w), k=log(nrow(don_desbois_winsorized)), trace = FALSE)
-```
-
-
-```{r}
-summary(forward_aic_w)
-```
-
-
-```{r}
-library(glmnet)
-library(glmnetUtils)
-X <- glmnet::makeX(train = don_desbois %>% dplyr::select(-Y), sparse = TRUE)
-Y <- don_desbois %>% pull(Y)
-
-(desbois_lasso <- glmnetUtils::glmnet(Y ~ ., data=don_desbois, family="binomial", alpha=1))
-(desbois_lasso <- glmnet::glmnet(X, Y, family="binomial", alpha=1))
-```
-
-```{r}
-colnames <- dimnames(X)[[2]]
-# # A tibble: 45 × 1
-# group value                                  
-#       <chr>                                  
-# 1    1 CNTYEure                               
-# 1    2 CNTYNord                               
-# 1    3 CNTYOrne                               
-# 1    4 CNTYSeine-Maritime                     
-# 2    5 STATUScompany                          
-# 2    6 STATUSEntreprise individuelle          
-# 3    7 HECTARE                                
-# 4    8 ToFcereals                             
-# 4    9 ToFgeneral cropping                    
-# 4    10 ToFdairy farm                          
-# 4    11 ToFmixed livestock                     
-# 4    12 ToFvarious crops and livestock combined
-# 4    13 ToFsoilless breeding                   
-# 5    14 OWNLANDno                              
-# 5    15 OWNLANDyes                             
-# 6    16 AGE                                    
-# 7    17 HARVEST1988                            
-# 7   18 HARVEST1989                            
-# 7    19 HARVEST1990                            
-# 7    20 HARVEST1991                            
-# 7    21 HARVEST1992                            
-# 7    22 HARVEST1993                            
-# 7    23 HARVEST1994                            
-# 8    24 r1                                     
-#     25 r2                                     
-#     26 r3                                     
-#     27 r4                                     
-#     28 r5                                     
-#     29 r6                                     
-#     30 r7                                     
-#     31 r8                                     
-#     32 r11                                    
-#     33 r12                                    
-#     34 r14                                    
-#     35 r17                                    
-#     36 r18                                    
-#     37 r19                                    
-#     38 r21                                    
-#     39 r22                                    
-#     40 r24                                    
-#     41 r28                                    
-#     42 r30                                    
-#     43 r32                                    
-#     44 r36                                    
-#     45 r37     
-
-colgroups <- c(rep(1, 4), rep(2, 2), 3, rep(4, 6), rep(5, 2), 6, rep(7, 7), seq(8, 29) )
-
-Y_gg <- don_desbois %>% mutate(Y_gg = if_else(Y == 0, -1, 1)) %>%  pull(Y_gg)
-
-(desbois_group_lasso <- gglasso::cv.gglasso(as.matrix(X), Y_gg, loss = "logit", pred.loss = "misclass", group = colgroups))
-```
 
 
 ## Exercise
@@ -2022,6 +1764,7 @@ Using the Mixture data set, plot ROC curves for some chosen classifiers:
 * implementing from scratch a method for plotting using the course description
 
 ```{r}
+#| code-fold: show
 roc_curve <- function(s, error_rate){
     # error_rate is a tibble containing a column Y of true values and a column score 
     
@@ -2054,7 +1797,7 @@ roc_curve <- function(s, error_rate){
 ```
 
 ```{r}
-
+#| code-fold: show
 # In the case of logistic regression, we use the regression function in [0, 1] as a scoring function
 # We vary s in [0, 1] to compute the ROC parametric curve 
 roc_coordinates_logit <- list()
@@ -2069,6 +1812,7 @@ ggplot(roc_coordinates_logit, aes(x=fpr, y = tpr)) + geom_line()
 
 ```
 ```{r}
+#| code-fold: show
 # In the case of logistic regression, we use the regression function in [0, 1] as a scoring function
 # We vary s in [0, 1] to compute the ROC parametric curve 
 roc_coordinates_logit_splines <- list()
@@ -2084,6 +1828,7 @@ ggplot(roc_coordinates_logit_splines, aes(x=fpr, y = tpr)) + geom_line()
 
 ```
 ```{r}
+#| code-fold: show
 # In the case of logistic regression, we use the regression function in [0, 1] as a scoring function
 # We vary s in [0, 1] to compute the ROC parametric curve 
 roc_coordinates_logit_binned <- list()
@@ -2098,7 +1843,7 @@ ggplot(roc_coordinates_logit_binned, aes(x=fpr, y = tpr)) + geom_line()
 ```
 
 ```{r}
-
+#| code-fold: show
 # In the case of cart, we use the predicted prob in [0, 1] as a scoring function
 # Caution, with decision trees, the "probability" or score function is given by the appartenance to a terminal node
 # In our case we have 6 terminal nodes a
@@ -2115,6 +1860,7 @@ ggplot(roc_coordinates_cart, aes(x=fpr, y = tpr)) + geom_line()
 
 ```
 ```{r}
+#| code-fold: show
 ggplot() +
     geom_line(data = roc_coordinates_logit, aes(x=fpr, y = tpr, color = 'logistic')) +
     geom_line(data = roc_coordinates_logit_splines, aes(x=fpr, y = tpr, color = 'logistic splines')) +
@@ -2133,6 +1879,7 @@ ggplot() +
 * using ROCR package (see `ROCR_Talk_Tobias_Sing.ppt` for a presentation)
 
 ```{r}
+#| code-fold: show
 # ROC Curves with ROCR
 library("ROCR")    
 
@@ -2164,234 +1911,6 @@ legend(0.6,0.6,
        c('logistic', 'logistic splines', 'logistic binned', 'decision tree'),
        col=c("darkorange", "darkolivegreen", "plum4", "dodgerblue"),lwd=3)
 ```
-
-
-Using the Agriculture Farm Lending data set or R package `rsample` and inspiring from this [book chapter](https://bradleyboehmke.github.io/HOML/process.html):
-
-* briefly explore the data set (the full case study is presented in the `root,+Directeur+de+la+revue,+351-1336-1-CE.pdf`)
-
-```{r}
-glimpse(don_desbois)
-```
-
-```{r}
-vars_quanti <- names(don_desbois %>% select_if(is.numeric))
-for(var in vars_quanti){
-    var <- as.name(var)
-    print(ggplot(don_desbois %>%
-                     # filter(r17 <0.14) %>% 
-                     mutate(Y = as.numeric(Y)-1), aes(x=!! var,y = Y)) +
-        geom_jitter(height = 0.1, width = 0) +
-        geom_smooth(method = "glm", 
-                    formula = y ~ x,
-                    method.args = list(family = "binomial"), 
-                    se = FALSE,
-                    col = "dodgerblue"))
-}
-```
-At first sight there seem to be outliers in the financial ratios values (we can deal with that )
-
-```{r}
-don_desbois_winsorized <- don_desbois %>%
-    mutate(across(r1:r37, ~ DescTools::Winsorize(.x , probs = c(0.00, 0.975))))
-
-vars_quanti <- names(don_desbois_winsorized %>% select_if(is.numeric))
-for(var in vars_quanti){
-    var <- as.name(var)
-    print(ggplot(don_desbois_winsorized %>%
-                     # filter(r17 <0.14) %>% 
-                     mutate(Y = as.numeric(Y)-1), aes(x=!! var,y = Y)) +
-        geom_jitter(height = 0.1, width = 0) +
-        geom_smooth(method = "glm", 
-                    formula = y ~ x,
-                    method.args = list(family = "binomial"), 
-                    se = FALSE,
-                    col = "dodgerblue"))
-}
-```
-
-
-```{r, message = FALSE}
-vars_quali <- names(don_desbois %>% select_if(is.factor) %>% select(-Y))
-for(var in vars_quali){
-    var <- as.name(var)
-    print(ggplot(don_desbois %>% 
-                     group_by(!!var, Y) %>% 
-                     summarize(count = n()) %>% 
-                     ungroup()) +
-        geom_bar(aes(x = Y, y = count, fill = !!var), position="dodge",stat="identity"))
-}
-```
-
-```{r}
-class_width <- 0.01
-(don_desbois_binned <- don_desbois %>%
-    mutate(r17_bins = cut(r17, breaks = seq(0, 0.15, class_width),
-                              right = FALSE, dig.lab = 4),
-           min = floor(r17 / class_width) * class_width,
-           max = if_else(r17 == 0 , 1, 
-                         # customers with 0$ balance should belong to [0, width) class
-                         # or be excluded
-                         ceiling(r17 / class_width))  * class_width) %>% 
-    group_by(r17_bins, min, max, Y) %>% 
-    summarize(n=n()) %>% 
-    ungroup() %>% 
-    pivot_wider(names_from = Y, values_from = n) %>%
-    replace_na(list(`0` = 0, `1` = 0)) %>% 
-    mutate(`Mean(Y)` = round(`1` / (`1` + `0`), 4)))
-```
-
-* perform train/test split and evaluate ROC / AUC for some `glm()` models of your choice (ie choose manually a subset of variables)
-
-Simple random sampling (70/30)
-
-```{r}
-
-# Using base R
-set.seed(1987)  # for reproducibility
-index_1 <- sample(1:nrow(don_desbois), round(nrow(don_desbois) * 0.7))
-train_1 <- don_desbois[index_1, ]
-test_1  <- don_desbois[-index_1, ]
-
-# table(don_desbois$Y) %>% prop.table()
-#        0        1 
-# 0.518254 0.481746
-
-# table(train_1$Y) %>% prop.table()
-#         0         1 
-# 0.5136054 0.4863946 
-
-# table(test_1$Y) %>% prop.table()
-#         0         1 
-# 0.5291005 0.4708995 
-
-# Using rsample package
-set.seed(1987)  # for reproducibility
-split_1  <- rsample::initial_split(don_desbois, prop = 0.7)
-train_2  <- rsample::training(split_1)
-test_2   <- rsample::testing(split_1)
-
-
-```
-
-Here the data set is balanced and train/test using a simple random sampling have a similar distribution. 
-
-But in case of imbalance or if we want to control the split we may want to use Stratified sampling:
-
-```{r}
-
-split_strat  <- rsample::initial_split(don_desbois, prop = 0.7, 
-                              strata = "Y")
-train_strat  <- rsample::training(split_strat)
-test_strat   <- rsample::testing(split_strat)
-
-# table(don_desbois$Y) %>% prop.table()
-#        0        1 
-# 0.518254 0.481746
-
-# table(train_strat$Y) %>% prop.table()
-#         0         1 
-# 0.5187287 0.4812713  
-
-# table(test_1$Y) %>% prop.table()
-#         0         1 
-# 0.5171504 0.4828496 
-
-```
-
-```{r}
-# We use to illustrate the model proposed in the article
-
-#fit logistic regression model
-model_desbois <- glm(Y ~ STATUS + HECTARE + r1 + r3 + r17 + r24 + r28 + r36,
-                     data = train_strat,
-                     family = "binomial")
-
-
-
-
-# plot ROC / compute AUC for the training set
-pred_train <- prediction(model_desbois$fitted.values, train_strat$Y)
-perf_train <- performance(pred_train, measure = "tpr", x.measure = "fpr")
-plot(perf_train, main="ROC curve Admissions", xlab="Specificity",
-     ylab="Sensitivity", col = "darkorange")
-abline(0, 1) #add a 45 degree line
-
-auc_train <- performance(pred_train, measure = "auc")
-auc_train <- auc_train@y.values[[1]]
-# auc_train
-# 0.9635595
-
-# use fitted model to predict value on testing set
-test_predict <- predict(model_desbois, newdata=test_strat, type="response")
-
-# plot ROC / compute AUC for the training set
-pred_test <- prediction(test_predict, test_strat$Y)
-perf_test <- performance(pred_test, measure = "tpr", x.measure = "fpr")
-plot(perf_test, add = TRUE, main="ROC curve Admissions", xlab="Specificity",
-     ylab="Sensitivity", col = "dodgerblue")
-
-auc_test <- performance(pred_test, measure = "auc")
-auc_test <- auc_test@y.values[[1]]
-
-```
-
-
-* perform k-fold cross validation and for each fold evaluate ROC / AUC for the same models as before
-
-```{r, warning=FALSE}
-set.seed(1987)
-folds_10  <- rsample::vfold_cv(train_strat, v = 10)
-
-cvfun <- function(split, ...){
-  mod <- glm(Y ~ STATUS + HECTARE + r1 + r3 + r17 + r24 + r28 + r36,
-             data=rsample::analysis(split),
-             family=binomial)
-  fit <- predict(mod, newdata=rsample::assessment(split), type="response")
-  data.frame(fit = fit, y = model.response(model.frame(formula(mod), data=rsample::assessment(split))))
-}
-
-cv_out <- folds_10 %>% 
-    mutate(fit = purrr::map(splits, cvfun)) %>% 
-    unnest(fit) %>% 
-    group_by(id) %>% 
-    summarise(auc = pROC::roc(y, fit, plot=FALSE)$auc[1])
-
-
-```
-```{r}
-# https://stackoverflow.com/questions/66000977/roc-with-cross-validation-for-linear-regression-in-r
-cv_out_plot <- folds_10 %>% 
-  mutate(fit = map(splits, cvfun)) %>% 
-  unnest(fit) %>% 
-  group_by(id) %>% 
-  summarise(sens = pROC::roc(y, fit, plot=FALSE)$sensitivities, 
-              spec = pROC::roc(y, fit, plot=FALSE)$specificities, 
-              obs = 1:length(sens))
-
-ave <- cv_out_plot %>% 
-  ungroup %>% 
-  group_by(obs) %>% 
-  summarise(sens = mean(sens), 
-            spec = mean(spec), 
-            id = "Average")
-
-cv_out_plot <- bind_rows(cv_out_plot, ave) %>% 
-  mutate(col = factor(ifelse(id == "Average", "Average", "Individual"), 
-                      levels=c("Individual", "Average")))
-
-ggplot(cv_out_plot , aes(x=1-sens, y=spec, group=id, colour=col)) + 
-  geom_line(aes(size=col, alpha=col)) + 
-  scale_colour_manual(values=c("black", "red")) + 
-  scale_size_manual(values=c(.5,1.25)) + 
-  scale_alpha_manual(values=c(.3, 1)) + 
-  theme_classic() + 
-  theme(legend.position=c(.75, .15)) + 
-  labs(x="1-Sensitivity", y="Specificity", colour="", alpha="", size="")
-
-
-```
-
 
 
 # References

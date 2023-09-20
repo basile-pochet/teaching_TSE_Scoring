@@ -1,0 +1,17 @@
+tidyverse
+ggplot2
+tibble
+tidyr
+readr
+purrr
+dplyr
+stringr
+forcats
+foreign
+ROCR
+patchwork
+leaps
+bestglm
+Matrix
+glmnet
+glmnetUtils
