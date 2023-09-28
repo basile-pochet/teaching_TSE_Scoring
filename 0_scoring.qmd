@@ -1,0 +1,68 @@
+---
+title: "TSE - Scoring"
+author: "Louis Olive"
+format: revealjs
+fontsize: 25pt
+---
+
+
+## Agenda
+
+* Part 1 (9h): Methods
+
+    - Statistical learning goals and vocabulary are defined in the context of scoring and classification.
+
+    - Introduction and study of two workhorses: 
+
+        + the Logistic Regression model
+
+        + Decision Trees
+
+* Part 2 (15h): Case study
+
+    - Credit risk is one of the various application of scoring. 
+    - Presentation of a concrete case using a real life data set. 
+    - Presentation of a baseline solution. 
+
+    - A selection of topics will be proposed to the students with the goal to improve this baseline and assess alternative methods. 
+
+The emphasis is put on numerical examples with a hands on approach. Codes are given in R.
+
+## Examination
+
+* Part 1: 
+
+In-class data analysis on a real dataset including data exploration and applications from the course, followed by a take-home assignment going further (report + R code, 30%).
+
+* Part 2: 
+
+Project per group of students (70%).
+
+## Project
+
+Realization of a project per group of students (2/3) partly in-class including: 
+
+* the reading of selected papers,
+
+*	the exploration of additional data sets,
+
+*	the understanding of the methods or algorithms at stake (if necessary the student will re-implement from scratch a simplified version or give a short proof of key results),
+
+*	the implementation of the methods on the real life data set,
+
+*	the assessment of the solution,
+
+*	the writing of a report and a presentation.
+
+## References
+
+* Logistic regression:
+
+Hosmer D.W., Lemeshow S. and Sturdivant  R.X. (2013) Applied Logistic Regression, Wiley.
+
+Cornillon P.A., Matzner-Løber E. (2019) Régression avec R, Springer.
+
+* Other methods:
+
+Hastie T., Tibshirani R. and Friedman. J. (2009) The Elements of Statistical Learning: Data Mining, Inference and Prediction, Springer. (https://hastie.su.domains/ElemStatLearn/printings/ESLII_print12_toc.pdf)
+

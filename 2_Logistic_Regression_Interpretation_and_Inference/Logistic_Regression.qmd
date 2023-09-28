@@ -16,7 +16,7 @@ format:
     toc_depth: 3
     toc_float: yes
 execute: 
-  cache: true
+  #cache: true
   warning: false
 editor: visual
 fontsize: 11pt
@@ -311,7 +311,7 @@ As $y_i$ are independent the likelihood function (joint probability) is the prod
 
 $$
 L(Y,\beta) = \prod_{i=1}^n p_{\beta}(x_i)^{y_i}(1-p_{\beta}(x_i))^{1-y_i}
-$$ 
+$$
 
 with $Y=(y_1,\cdots,y_n)$ and $\beta=(\beta_1,\cdots,\beta_p)$.
 
@@ -620,27 +620,17 @@ and $\hat{\mathrm{R}}(p_\beta)$ is the empirical risk on the training set.
 
 Estimating $\beta$ by maximizing the log-likelihood is equivalent to minimizing with respect to $\beta$ the empirical risk of $p_\beta$ for the logistic loss. Note that usually in the context of machine learning and logistic loss, the output $Y$ is relabeled to $\{-1,1\}$
 
-
-
-
-
-
-
-
 # Interpretation
-
 
 ```{r}
 summary(glm_default)
 ```
-
 
 Based on this output, the fitted model is (we have re-scaled balance and income for better readability):
 
 $$
 \log \bigg( \frac{p_{\beta}(x_i)}{1 - p_{\beta}(x_i)}\bigg) = -1.08 - 0.65(\mathbb{1}_{\mathrm{student}_i=\mathrm{Yes}}) + 5.74(\frac{\mathrm{balance}_i}{1000})+ 0.03(\frac{\mathrm{income}_i}{10000})
 $$
-
 
 ## Coefficients
 
@@ -660,19 +650,17 @@ $$
 \mathrm{logit}(p_{\beta}(x))=\log(\frac{p_{\beta}(x)}{1-p_{\beta}(x)})=x^T\beta
 $$
 
-
-
 The ratio on which we take the logarithm is called odds:
 
 $$
 odd_\beta(x) = \frac{p_{\beta}(x)}{1-p_{\beta}(x)}=exp(x^T\beta)
 $$
 
-It represents the chance an event occurs ($p_{\beta}(x)$) versus the chance that same event does not occur ($1-p_{\beta}(x)$). 
+It represents the chance an event occurs ($p_{\beta}(x)$) versus the chance that same event does not occur ($1-p_{\beta}(x)$).
 
-Odds are an alternative scale to probability for representing chance. 
+Odds are an alternative scale to probability for representing chance.
 
-They arose as a way to express the payoffs for bets. An even bet means that the winner gets paid an equal amount to that staked. 
+They arose as a way to express the payoffs for bets. An even bet means that the winner gets paid an equal amount to that staked.
 
 A 3--1 against bet would pay $\$3$ for every $\$1$ bet, while a 3--1 on bet would pay only $\$1$ for every $\$3$ bet.
 
@@ -684,8 +672,7 @@ We can also rewrite:
 
 $$
 p_\beta(x) = \frac{odds_{\beta}(x)}{1+odds_{\beta}(x)}
-$$
-To set these ideas, for a variable $x$ in $[-5,5]$, we plot the logistic curve (i.e. the probabilities) together with the odds and the logits (ie log(odds)):
+$$ To set these ideas, for a variable $x$ in $[-5,5]$, we plot the logistic curve (i.e. the probabilities) together with the odds and the logits (ie log(odds)):
 
 ```{r}
 # Create w values and transformed values
@@ -718,15 +705,12 @@ library(patchwork)
 p1 + p2 + p3
 ```
 
-
-
-
 ::: {.callout-tip icon="false"}
 Interpret the coefficients in terms of odds:
 
 -   The coefficient of balance is `r round(as.numeric(coef(glm_default)["balance"]),6)`. Hence an increase of balance by 1000 points increases odds for default by a factor of `r round(exp(as.numeric(coef(glm_default)["balance"])*1000),1)`.
 -   The coefficient of income is `r round(as.numeric(coef(glm_default)["income"]),7)`. Hence an increase of income by 10000 points increases odds for default by a factor of `r round(exp(as.numeric(coef(glm_default)["income"])*10000),2)`.
-- The coefficient of "being a student" is `r round(as.numeric(coef(glm_default)["studentYes"]),3)`. Hence being a student decreases odds for default by a factor of `r round(exp(as.numeric(coef(glm_default)["studentYes"])),2)`.
+-   The coefficient of "being a student" is `r round(as.numeric(coef(glm_default)["studentYes"]),3)`. Hence being a student decreases odds for default by a factor of `r round(exp(as.numeric(coef(glm_default)["studentYes"])),2)`.
 :::
 
 ## Odds ratio
@@ -735,19 +719,17 @@ For two observations $x$ and $\tilde{x}$ we define odds ratio as:
 
 $$
 OR(x,\tilde{x})=\frac{odds(x)}{odds(\tilde{x})}
-$$
-Odds ratio are used to compare probabilities between two observations:
+$$ Odds ratio are used to compare probabilities between two observations:
 
--   $OR(x,\tilde{x}) = 1 \Leftrightarrow p(x)=p(\tilde{x})$ 
--   $OR > 1 \Leftrightarrow p(x)>p(\tilde{x})$ 
--   $OR < 1 \Leftrightarrow p(x)<p(\tilde{x})$ 
+-   $OR(x,\tilde{x}) = 1 \Leftrightarrow p(x)=p(\tilde{x})$
+-   $OR > 1 \Leftrightarrow p(x)>p(\tilde{x})$
+-   $OR < 1 \Leftrightarrow p(x)<p(\tilde{x})$
 
 They are also used to measure the impact of a predictor:
 
 $$
 OR(x,\tilde{x})=\exp(\beta_1(x_1-\tilde{x_1}))\cdots exp(\beta_p(x_p-\tilde{x_p}))
-$$
-Choosing $(x,\tilde{x})$ differing by only one predictor $x_j$:
+$$ Choosing $(x,\tilde{x})$ differing by only one predictor $x_j$:
 
 $$
 OR(x,\tilde{x})=\exp(\beta_j(x_j-\tilde{x_j}))
@@ -755,9 +737,7 @@ $$
 
 In other words, $exp(\beta_j)$ is the odds ratio associated with a one-unit increase in the $x_j$.
 
-More on odds ratio interpretation can be found [here](https://stats.oarc.ucla.edu/other/mult-pkg/faq/general/faq-how-do-i-interpret-odds-ratios-in-logistic-regression/). 
-
-
+More on odds ratio interpretation can be found [here](https://stats.oarc.ucla.edu/other/mult-pkg/faq/general/faq-how-do-i-interpret-odds-ratios-in-logistic-regression/).
 
 # Inference
 
@@ -773,8 +753,7 @@ and
 
 $$
 \sqrt n(\hat\beta-\beta) \xrightarrow[]{\mathcal L} \mathcal N(0,\mathcal I(\beta)^{-1})\textrm{, as n} \to \infty
-$$ 
-where:
+$$ where:
 
 $$
 \mathcal I(\beta) = -\mathbb{E}[\nabla^2\ell(Y,\beta)]=-\frac{1}{n}\nabla^2\ell(Y,\beta)=\frac{1}{n}X^T W_\beta X
@@ -800,36 +779,29 @@ $$
 \hat\beta -\beta \xrightarrow[]{\mathcal L} \mathcal N(0,\mathcal ( X^T W_{\hat\beta} X )^{-1})
 $$
 
-
 ## Wald statistics
 
-### Confidence intervals 
+### Confidence intervals
 
 Using the preceding asymptotic properties we can derive confidence interval and tests for the coefficients $\beta_j$, $j =1,\cdots,p$ of the model:
 
 $$
 \frac{\hat\beta_j-\beta_j}{\hat \sigma_j} \xrightarrow[]{\mathcal L} \mathcal N(0,1)
-$$
-where $\hat \sigma_j^2= s.e.(\hat\beta_j)^2$ denotes the $j-th$ term of $( X^T W_{\hat\beta} X )^{-1}$ diagonal.
+$$ where $\hat \sigma_j^2= s.e.(\hat\beta_j)^2$ denotes the $j-th$ term of $( X^T W_{\hat\beta} X )^{-1}$ diagonal.
 
 The typical formula for a $1-\alpha$ confidence interval is:
 
 $$
 \hat\beta_j \pm z_{1-\alpha/2} \hat \sigma_j
-$$
-where $z_{1-\alpha/2}$ is the $(1-\alpha/2)$ quantile of the standard normal distribution.
+$$ where $z_{1-\alpha/2}$ is the $(1-\alpha/2)$ quantile of the standard normal distribution.
 
-Going further, the asymptotic properties of MLE also allow to test the "statistical significance" of each coefficient in the model, the Wald test. 
+Going further, the asymptotic properties of MLE also allow to test the "statistical significance" of each coefficient in the model, the Wald test.
 
 Denoting: $\textrm{H}_0\textrm{: } \beta_j=0$ and $\textrm{H}_1\textrm{: } \beta_j \neq 0$ we have under $\textrm{H}_0$:
 
 $$
 \frac{\hat\beta_j}{\hat \sigma_j} \xrightarrow[]{\mathcal L} \mathcal N(0,1)
-$$
-We will reject $\textrm{H}_0$ at level $\alpha$ if the absolute of the observed value  $\frac{\hat\beta_j}{\hat \sigma_j}$ (denoted in `glm` output as `z value`) is above the $(1-\alpha/2)$ quantile of the standard normal distribution.
-
-
-
+$$ We will reject $\textrm{H}_0$ at level $\alpha$ if the absolute of the observed value $\frac{\hat\beta_j}{\hat \sigma_j}$ (denoted in `glm` output as `z value`) is above the $(1-\alpha/2)$ quantile of the standard normal distribution.
 
 ```{r}
 #| code-fold: show
@@ -838,24 +810,24 @@ glm_bal_inc <- glm(default ~ balance + income,
                  family = "binomial")
 summary(glm_bal_inc)
 ```
-Said differently, we reject $\textrm{H}_0$ at level $\alpha$ when  $p = \mathbf P(|z|>|\frac{\hat\beta_j}{\hat \sigma_j}|)<\alpha$.
+
+Said differently, we reject $\textrm{H}_0$ at level $\alpha$ when $p = \mathbf P(|z|>|\frac{\hat\beta_j}{\hat \sigma_j}|)<\alpha$.
 
 $p$ is called the p-value.
 
 The output of `glm` in `R` shows:
 
-* $\hat\beta_j$ as `Estimate`,
+-   $\hat\beta_j$ as `Estimate`,
 
-* $\hat \sigma_j$ as `Std. Error`,
+-   $\hat \sigma_j$ as `Std. Error`,
 
-* the absolute of the observed test statistic  $\frac{\hat\beta_j}{\hat \sigma_j}$ as `z value`,
+-   the absolute of the observed test statistic $\frac{\hat\beta_j}{\hat \sigma_j}$ as `z value`,
 
-* and the p-value as `Pr(>|z|)`
+-   and the p-value as `Pr(>|z|)`
 
 ```{r}
 (1-pnorm(4.174))*2
 ```
-
 
 Using the hessian matrix obtained before as a side product of the Newton-Raphson algorithm, we retrieve the same values as `glm` for $\hat \sigma_j$:
 
@@ -871,6 +843,7 @@ The `R` command to get confidence interval of estimators based on Wald statistic
 #| code-fold: show
 confint.default(glm_bal_inc)
 ```
+
 We can retrieve it manually using coefficient estimate and standard deviation:
 
 ```{r}
@@ -888,6 +861,7 @@ lower <- bal_std_estimate - 1.96 * bal_std_error
 ```
 
 The following `R` command provides confidence interval of estimators using a more advance profile likelihood method:
+
 ```{r}
 #| code-fold: show
 confint(glm_bal_inc)
@@ -905,13 +879,12 @@ We have under $\textrm{H}_0$:
 
 $$
 \hat\beta_{1:q}^T( X^T W_{\hat\beta} X )^{-1}_{1:q}\hat\beta_{1:q} \xrightarrow[]{\mathcal L} \chi_q^2
-$$
-where $(X^T W_{\hat\beta} X )^{-1}_{1:q}$ is the $q \times q$ upper left block matrix extracted from the inverse of hessian.
+$$ where $(X^T W_{\hat\beta} X )^{-1}_{1:q}$ is the $q \times q$ upper left block matrix extracted from the inverse of hessian.
 
-We will reject $\textrm{H}_0$ at level $\alpha$ if the observed value  $\hat\beta_{1:q}^T( X^T W_{\hat\beta} X )^{-1}_{1:q}\hat\beta_{1:q}$ is above the $1-\alpha$ quantile of the $\chi_q^2$ distribution.
-
+We will reject $\textrm{H}_0$ at level $\alpha$ if the observed value $\hat\beta_{1:q}^T( X^T W_{\hat\beta} X )^{-1}_{1:q}\hat\beta_{1:q}$ is above the $1-\alpha$ quantile of the $\chi_q^2$ distribution.
 
 We show below the Wald tests for each coefficient in the model using `summary`:
+
 ```{r}
 #| code-fold: show
 #| # Testing all coefficients
@@ -925,7 +898,9 @@ These tests can be also performed in `R` using `car::Anova` or `aod::wald.test` 
 #| # Testing all coefficients
 car::Anova(glm_default, type=3, test.statistic= "Wald")
 ```
+
 We can retrieve these outputs manually:
+
 ```{r}
 sum_default <- summary(glm_default)
 beta_income <- sum_default$coefficients[4,1]
@@ -940,13 +915,13 @@ z_val <- sum_default$coefficients[4,3]
 2*(1-pnorm(z_val))
 ```
 
-
 ```{r}
 #| code-fold: show
 # Testing the income coefficient (Terms = 4)
 aod::wald.test(b = coef(glm_default), Sigma = vcov(glm_default), Terms = 4)
 
 ```
+
 With all routines, the p-value for the income coefficient is $0.71$ validating the null hypothesis.
 
 Using `Terms` or `L` parameters in `aod::wald.test` it is also feasible to test the null hypothesis for a subsets of parameters:
@@ -956,8 +931,8 @@ Using `Terms` or `L` parameters in `aod::wald.test` it is also feasible to test 
 # Testing the income coefficient (Terms = 4)
 aod::wald.test(b = coef(glm_default), Sigma = vcov(glm_default), Terms = 1:3)
 ```
-The null hypothesis is rejected for the model with balance and student.
 
+The null hypothesis is rejected for the model with balance and student.
 
 There are known issues with the Wald test:
 
@@ -967,7 +942,6 @@ There are known issues with the Wald test:
 
 So in the context of Logistic Regression (and GLM), while Wald statistics are usually reported by statistical routines, the likelihood ratio or deviance-based tests are often favored.
 
-
 ## Likelihood ratio tests
 
 It is possible to test for the nullity of a subset of the model coefficients using Likelihood Ratio statistics.
@@ -976,26 +950,24 @@ Denoting: $\textrm{H}_0\textrm{: } \beta_1=\cdots=\beta_q=0$, $\textrm{H}_1\text
 
 $$
 -2\left(\ell_{\textrm{H}_0}(Y,\hat\beta_{\textrm{H}_0})-\ell(Y,\hat\beta)\right)\xrightarrow[]{\mathcal L} \chi_q^2
-$$
-where $\ell_{\textrm{H}_0}(Y,\hat\beta_{\textrm{H}_0})$ is the log-likelihood of:
+$$ where $\ell_{\textrm{H}_0}(Y,\hat\beta_{\textrm{H}_0})$ is the log-likelihood of:
 
 $$
 \mathrm{logit}(p_{\beta}(X))=x_{q+1}\beta_{q+1}+\cdots+x_{n}\beta_{n}
 $$
 
-
 Consider two models, a larger model with $l$ parameters and likelihood $L_L$ and a smaller model with $s$ parameters and likelihood $L_S$, where the smaller model represents a subset of the larger model. Typically the smaller model is equivalent to the large model where we have imposed:
 
 $$
 \textrm{H}_0\textrm{: } \ \beta_j = \ldots  = \beta_{j+r}  = 0
-$$
-Likelihood Ratio tests on variables may be performed in `R` using `car::Anova`:
+$$ Likelihood Ratio tests on variables may be performed in `R` using `car::Anova`:
 
 ```{r}
 #| code-fold: show
 #| # Testing all coefficients
 car::Anova(glm_default, type=3, test.statistic= "LR")
 ```
+
 Using base `R` `anova` it is also possible to test subsets of variables and in particular individual variables within the "full" model:
 
 ```{r}
@@ -1016,6 +988,7 @@ glm_wo_income <- glm(default ~ student + balance,
 #| code-fold: show
 anova(glm_wo_student, glm_default, test = "LRT")
 ```
+
 We can retrieve this result manually:
 
 ```{r}
@@ -1024,8 +997,6 @@ LRT <- 2 * (logLik(glm_default)-logLik(glm_wo_student))
 
 1 - pchisq(LRT, df = 1)
 ```
-
-
 
 ```{r}
 #| code-fold: show
@@ -1037,38 +1008,40 @@ anova(glm_wo_balance, glm_default, test = "LRT")
 anova(glm_wo_income, glm_default, test = "LRT")
 ```
 
-The deviance defined as $D=-2 \ell$ is often reported by statistical software in place of log-likelihood. A large likelihood corresponding to a small deviance. 
+The deviance defined as $D=-2 \ell$ is often reported by statistical software in place of log-likelihood. A large likelihood corresponding to a small deviance.
 
 A better coverage of tests in the context of Logistic Regression can be found [here](https://stats.oarc.ucla.edu/other/mult-pkg/faq/general/faqhow-are-the-likelihood-ratio-wald-and-lagrange-multiplier-score-tests-different-andor-similar/) or in [@hosmer2013]. See also [here](https://stats.oarc.ucla.edu/r/dae/logit-regression/) for a data analysis using `R` and [here](https://stats.stackexchange.com/questions/86351/interpretation-of-rs-output-for-binomial-regression) for a detailed description of the outputs of `glm()`.
 
 # Variable selection, model assessment
 
-We have seen in the last section how to compare two or more nested Logistic regression models (typically a reduced model with less variables than a reference or full model). 
+We have seen in the last section how to compare two or more nested Logistic regression models (typically a reduced model with less variables than a reference or full model).
 
 Real life data sets usually contain a large number of predictors or inputs. As their number grow, the analyst will have to analyse a growing number of possible models or variable combinations (typically $2^p$ where $p$ denotes the number of predictors). Furthermore as the number of predictors grow the models might overfit the training set, causing a deterioration of prediction error.
 
-Variable selection is a critical aspect of building Logistic Regression models and prediction models in general. This process seeks to strike a delicate balance between the bias-variance trade-off, aiming to find models that are both parsimonious and predictive. Parsimony, in this context, implies the selection of a minimal set of predictor variables that still provides an accurate representation of the data, avoiding overfitting while enhancing model generalization. 
+Variable selection is a critical aspect of building Logistic Regression models and prediction models in general. This process seeks to strike a delicate balance between the bias-variance trade-off, aiming to find models that are both parsimonious and predictive. Parsimony, in this context, implies the selection of a minimal set of predictor variables that still provides an accurate representation of the data, avoiding overfitting while enhancing model generalization.
 
 This is a complex subject that we will not cover in depth in this course.
 
-For a better coverage, chapter 7 `Model Assessment and Selection` of @hastie2009 discusses in depth the interplay between bias, variance and model complexity. Chapter 6 `Linear Model Selection and Regularization` of @islr2021 discusses methods to automatically perform variable selection in the context of linear models. 
+For a better coverage, chapter 7 `Model Assessment and Selection` of @hastie2009 discusses in depth the interplay between bias, variance and model complexity. Chapter 6 `Linear Model Selection and Regularization` of @islr2021 discusses methods to automatically perform variable selection in the context of linear models.
 
 Various methods and criteria are employed for variable selection. In this section we consider some methods for selecting subsets of predictors: this include best subset, stepwise model selection procedures and penalization or shrinkage. We use the Agriculture Farm Lending data set as an example.
-
 
 ## Best subset
 
 One common approach is the "best subset" method, which evaluates all possible combinations of predictor variables, resulting in $2^p-1$ models for p predictors, and selects the one that optimizes a specified criterion, such as the Akaike Information Criterion (AIC) or Bayesian Information Criterion (BIC). It is computationally intensive and usually restricted to low dimension data sets.
 
-******
-**Algorithm**:  Best subset selection
+------------------------------------------------------------------------
 
-******
+**Algorithm**: Best subset selection
+
+------------------------------------------------------------------------
+
 1.  For $k=1,\cdots,p$:
     (a) Fit all ${p\choose k}$ models that contain exactly $k$ predictors.
     (b) Pick the best among these ${p\choose k}$ models, and call it $\mathcal M_k$. In the case of Logistic Regression, best usually means largest log-likelihood or min deviance.
 2.  Select a single best model from among $\mathcal M_1,\cdots,\mathcal M_p$ using a criterion. Usually the prediction error on a validation set, AIC, BIC... 
-******
+
+------------------------------------------------------------------------
 
 Given $|\mathcal M|$ we define the two following criteria which represent two way of penalizing the maximised log-likelihood $\ell(Y,\hat\beta)$:
 
@@ -1080,8 +1053,7 @@ and
 
 $$
 \textrm{BIC}(\mathcal M)=-2\ell(Y,\hat\beta)+|\mathcal M|\log(n)
-$$
-The package `bestglm` allows best subset selection up to $15$ variables, by default it uses BIC. We use the Default data set to illustrate because Agriculture Farm Lending has around $30$ variables:
+$$ The package `bestglm` allows best subset selection up to $15$ variables, by default it uses BIC. We use the Default data set to illustrate because Agriculture Farm Lending has around $30$ variables:
 
 ```{r}
 #| code-fold: show
@@ -1096,37 +1068,38 @@ mod_sel <- bestglm(default_best, family = binomial)
 mod_sel
 ```
 
-
-
-
 ## Stepwise Logistic Regression
 
-Alternatively, stepwise methods, including forward and backward selection, iteratively add or remove variables based on the chosen criterion. These approaches, while useful, can be also computationally intensive, especially for high-dimensional datasets. 
+Alternatively, stepwise methods, including forward and backward selection, iteratively add or remove variables based on the chosen criterion. These approaches, while useful, can be also computationally intensive, especially for high-dimensional datasets.
 
-******
-**Algorithm**:  Forward stepwise selection
+------------------------------------------------------------------------
 
-******
+**Algorithm**: Forward stepwise selection
+
+------------------------------------------------------------------------
+
 1.  For $k=1,\cdots,p$:
     (a) Consider all $p+1-k$ models that augment the predictors in $\mathcal M_k$ with one additional predictor.
     (b) Pick the best among these $p+1-k$ models, and call it $\mathcal M_{k+1}$. In the case of Logistic Regression, best usually means largest log-likelihood or min deviance.
-2.  Select a single best model from among $\mathcal M_1,\cdots,\mathcal M_p$ using a criterion. Usually the prediction error on a validation set, AIC, BIC... 
+2.  Select a single best model from among $\mathcal M_1,\cdots,\mathcal M_p$ using a criterion. Usually the prediction error on a validation set, AIC, BIC...
 
-******
+------------------------------------------------------------------------
 
-or 
+or
 
-******
-**Algorithm**:  Backward stepwise selection
+------------------------------------------------------------------------
 
-******
-1. Let $\mathcal M_p$ denote the full model, which contains all $p$ predictors.
-1.  For $k=p,\cdots,1$:
+**Algorithm**: Backward stepwise selection
+
+------------------------------------------------------------------------
+
+1.  Let $\mathcal M_p$ denote the full model, which contains all $p$ predictors.
+2.  For $k=p,\cdots,1$:
     (a) Consider all $k$ models that contain all but one of the predictors in $\mathcal M_k$, for a total of $k-1$ predictors.
     (b) Pick the best among these $k$ models, and call it $\mathcal M_{k-1}$. In the case of Logistic Regression, best usually means largest log-likelihood or min deviance.
-2.  Select a single best model from among $\mathcal M_1,\cdots,\mathcal M_p$ using a criterion. Usually the prediction error on a validation set, AIC, BIC... 
+3.  Select a single best model from among $\mathcal M_1,\cdots,\mathcal M_p$ using a criterion. Usually the prediction error on a validation set, AIC, BIC...
 
-******
+------------------------------------------------------------------------
 
 Below we use forward stepwise selection based on the AIC criterion to select variables in the Agriculture Farm Lending data set:
 
@@ -1172,8 +1145,6 @@ summary(forward_aic)
 
 We perform manually a likelihood-ratio-test-based forward selection (as described in Desbois) using only financial ratios as predictors.
 
-
-
 ```{r, warning = FALSE}
 #| code-fold: show
 all <- glm(Y ~ ., data=data_afl %>% select(Y, starts_with('r')), family="binomial")
@@ -1185,6 +1156,7 @@ first_step <- first_step %>%
     arrange(desc(LRT))
 first_step
 ```
+
 `r1` is the most significant variable in the first step
 
 ```{r, warning = FALSE}
@@ -1196,8 +1168,8 @@ second_step <- second_step %>%
     arrange(desc(LRT))
 second_step
 ```
-`r21` is the most significant variable in the second step (it differs from the article where r32 is selected (p70, the r32 in R is the same  as in article (129.65) but r21 and r14 have higher LRT)).
 
+`r21` is the most significant variable in the second step (it differs from the article where r32 is selected (p70, the r32 in R is the same as in article (129.65) but r21 and r14 have higher LRT)).
 
 ```{r, warning = FALSE}
 #| code-fold: show
@@ -1220,6 +1192,7 @@ fourth_step <- fourth_step %>%
     arrange(desc(LRT))
 fourth_step
 ```
+
 `r17` is the most significant variable in the fourth step.
 
 ```{r, warning = FALSE}
@@ -1243,6 +1216,7 @@ sixth_step <- sixth_step %>%
     arrange(desc(LRT))
 sixth_step
 ```
+
 `r11` is the most significant variable in the sixth step.
 
 Equivalently the `step` routine produces the same results:
@@ -1256,7 +1230,6 @@ summary(forward_aic)
 
 We now perform manual likelihood-ratio-test-based forward selection with override to converge with Desbois article (i.e. selecting the same variables as in Desbois if R diverge).
 
-
 ```{r, warning = FALSE}
 #| code-fold: show
 first_step_article <- add1(intercept_only, scope = formula(all), test = "LRT")
@@ -1266,6 +1239,7 @@ first_step_article <- first_step_article %>%
     arrange(desc(LRT))
 head(first_step, 4)
 ```
+
 `r1` is the most significant variable in the first step
 
 ```{r, warning = FALSE}
@@ -1278,8 +1252,7 @@ second_step_article <- second_step_article %>%
 head(second_step,4)
 ```
 
-In the article `r32` is the most significant variable in the second step: we choose `r32`instead of `r21`. We have exactly the same LRT as in the article 
-
+In the article `r32` is the most significant variable in the second step: we choose `r32`instead of `r21`. We have exactly the same LRT as in the article
 
 ```{r, warning = FALSE}
 #| code-fold: show
@@ -1302,7 +1275,8 @@ fourth_step <- fourth_step %>%
     arrange(desc(LRT))
 head(fourth_step, 4)
 ```
-In the article `r17` is the most significant variable in the fourth step: : we choose `r17`instead of `r18`. 
+
+In the article `r17` is the most significant variable in the fourth step: : we choose `r17`instead of `r18`.
 
 ```{r, warning = FALSE}
 #| code-fold: show
@@ -1325,11 +1299,10 @@ sixth_step <- sixth_step %>%
     arrange(desc(LRT))
 head(sixth_step, 4)
 ```
-Like in the article `r12` is the most significant variable in the sixth step (with same LRT). The routine (`SPSS`) in the article stops with this six variables. 
+
+Like in the article `r12` is the most significant variable in the sixth step (with same LRT). The routine (`SPSS`) in the article stops with this six variables.
 
 ![](images/desbois_forward_stepwise.png){fig-align="center" width="350"}
-
-
 
 R performs automated AIC/BIC based variable selections using (step)
 
@@ -1351,7 +1324,6 @@ backward_bic <- step(all, direction='backward', test = 'LRT', scope=formula(all)
 summary(backward_bic)
 ```
 
-
 ```{r}
 #define intercept-only model
 intercept_only_w <- glm(Y ~ 1, data=don_desbois_winsorized, family="binomial")
@@ -1366,29 +1338,23 @@ forward_aic_w <- step(intercept_only_w, direction='forward', scope=formula(all_w
 forward_bic_w <- step(intercept_only_w, direction='forward', scope=formula(all_w), k=log(nrow(don_desbois_winsorized)), trace = FALSE)
 ```
 
-
 ```{r}
 summary(forward_aic_w)
 ```
 
-
-
-
 ## Introducing penalized logistic regressions
 
-As an alternative, penalized regression techniques like the Lasso (Least Absolute Shrinkage and Selection Operator) or to a lesser extent Ridge offer an efficient means of variable selection by introducing a penalty term in the Logistic Regression estimation algorithm. In particular Lasso promotes the sparsity of coefficients and automatically selects relevant predictors while shrinking others to zero. 
+As an alternative, penalized regression techniques like the Lasso (Least Absolute Shrinkage and Selection Operator) or to a lesser extent Ridge offer an efficient means of variable selection by introducing a penalty term in the Logistic Regression estimation algorithm. In particular Lasso promotes the sparsity of coefficients and automatically selects relevant predictors while shrinking others to zero.
 
 We remind that to estimate Logistic Regression parameters, we maximized in $\beta$ the log-likelihood:
 
 $$
 \ell(Y,\beta)=\log L(Y,\beta) =\sum_{i=1}^n \left(y_i \log(p_{\beta}(x_i))+(1-y_i) \log(1- p_{\beta}(x_i))\right)
-$$
-In the context of penalized Logistic Regression the idea is to minimize in $\beta$:
+$$ In the context of penalized Logistic Regression the idea is to minimize in $\beta$:
 
 $$
 -\ell(Y,\beta)+\lambda_2\lVert\beta\rVert_2 + \lambda_1\lVert\beta\rVert_1
-$$
-where $\lambda_1, \lambda_2$ are two constants.
+$$ where $\lambda_1, \lambda_2$ are two constants.
 
 The undelying idea is to constraint or shrink the size of the coefficients estimates.
 
@@ -1409,7 +1375,6 @@ data_mixture_example <- readRDS("../1_Scoring_and_Logistic_Regression/data_mixtu
 y = as.numeric(data_mixture_example$Y)-1
 X = as.matrix(data_mixture_example %>% select(x1,x2))
 ```
-
 
 Some intuition behind Ridge shrinkage:
 
@@ -1475,7 +1440,8 @@ plot(desbois_lasso)
 # X <- glmnet::makeX(train = don_desbois %>% dplyr::select(-Y), sparse = TRUE)
 # desbois_lasso <- glmnet::cv.glmnet(X, Y, data=don_desbois, family="binomial", alpha=1, type.measure = "auc")
 ```
-Note that the penalized regression solutions are sensitive to the scaling of the inputs, and so one normally standardizes the inputs before solving. 
+
+Note that the penalized regression solutions are sensitive to the scaling of the inputs, and so one normally standardizes the inputs before solving.
 
 We can extract for each $\lambda$ the value of coefficients:
 
@@ -1486,7 +1452,7 @@ names(lasso_result) <-  c("lambda", row.names(desbois_lasso$beta))
 lasso_result
 ```
 
-`glmnet` also provides an automatic and efficient procedure to select $lambda$ implementing K-fold Cross-Validation (see next paragraph):
+`glmnet` also provides an automatic and efficient procedure to select $\lambda$ implementing K-fold Cross-Validation (see next paragraph):
 
 ```{r}
 #| code-fold: show
@@ -1494,7 +1460,6 @@ desbois_lasso_cv <- glmnetUtils::cv.glmnet(Y ~ ., data=don_desbois, family="bino
 lasso_coeffs <- coef(desbois_lasso_cv, s = "lambda.1se")
 data.frame(name = lasso_coeffs@Dimnames[[1]][lasso_coeffs@i + 1], coefficient = lasso_coeffs@x)
 ```
-
 
 ## Model assessment
 
@@ -1508,18 +1473,21 @@ Two principal approaches are used: the Hold-out approach and the K-fold Cross-va
 
 It consists in splitting the data set into:
 
-* a learning or training set used to train the classifier or the Score ; 
-* a validation or test set used to estimate the empirical risk of the classifier or any other metric (ROC curve, AUC).
+-   a learning or training set used to train the classifier or the Score ;
+-   a validation or test set used to estimate the empirical risk of the classifier or any other metric (ROC curve, AUC).
 
-******
-**Algorithm**:  Hold-out approach
+------------------------------------------------------------------------
 
-******
+**Algorithm**: Hold-out approach
+
+------------------------------------------------------------------------
+
 1.  Using a partition training/validation $\{\mathcal T, \mathcal V\}$ of the data set $\mathcal D$:
     (a) Fit the classifiers $f_1\cdots,f_m$ on $\mathcal T$
-    (b) Compute  the empirical risk $\hat{\mathrm R}(f) = \frac{1}{n_{\mathcal V}} \sum_i \ell(y_i,f_m(x_i))$ or any other metric on the validation set $\mathcal V$
-2.  Select a single best model $f_{m^*}$ with respect to the empirical risk or metric
-******
+    (b) Compute the empirical risk $\hat{\mathrm R}(f) = \frac{1}{n_{\mathcal V}} \sum_i \ell(y_i,f_m(x_i))$ or any other metric on the validation set $\mathcal V$
+2.  Select a single best model $f_{m^*}$ with respect to the empirical risk or metric 
+
+------------------------------------------------------------------------
 
 The main drawback using a single split of data is the possible variability of empirical risk, which is more pregnant when the data set size reduces. Against this issue an alternative approach is to repeat this process on multiple splits of the data.
 
@@ -1527,18 +1495,20 @@ The main drawback using a single split of data is the possible variability of em
 
 It consists in splitting randomly the data set into $K$ blocks of folds then repeating $K$ times the Hold-out approach, each time using a different block as validation set.
 
+------------------------------------------------------------------------
 
-******
-**Algorithm**:  K-fold Cross-Validation approach
+**Algorithm**: K-fold Cross-Validation approach
 
-******
+------------------------------------------------------------------------
+
 1.  Using a random partition in $K$ blocks $\{\mathcal D_1, \cdots,\mathcal D_K\}$ of the data set $\mathcal D$
-1.  For $k=1,\cdots,K$
+2.  For $k=1,\cdots,K$
     (a) $\{\mathcal T_k, \mathcal V_k\}$ with $\mathcal V_k=\mathcal D_k$ and $\mathcal T_k=\mathcal D\setminus\mathcal D_k$
-    (a) Fit the classifiers $f_1\cdots,f_m$ on $\mathcal T_k$
-    (b) Compute  the empirical risk $\hat{\mathrm R}(f) = \frac{1}{n_{\mathcal V_k}} \sum_i \ell(y_i,f_m(x_i))$ or any other metric on the validation set $\mathcal V_k$
-2.  Select a single best model $f_{m^*}$ using the average empirical risk or metric
-******
+    (b) Fit the classifiers $f_1\cdots,f_m$ on $\mathcal T_k$
+    (c) Compute the empirical risk $\hat{\mathrm R}(f) = \frac{1}{n_{\mathcal V_k}} \sum_i \ell(y_i,f_m(x_i))$ or any other metric on the validation set $\mathcal V_k$
+3.  Select a single best model $f_{m^*}$ using the average empirical risk or metric 
+
+------------------------------------------------------------------------
 
 A variant is to first split the data set into a training and validation set. Perform K-fold Cross-Validation on the training set, for example to select some classifier hyper parameter (number of variables or model specification in logistic regression, penalty, etc), then assess the best "optimized" models on the validation set.
 
@@ -1546,12 +1516,11 @@ Another variant is to repeat the K-fold CV 5 or 10 times to improve the accuracy
 
 This [book chapter](https://bradleyboehmke.github.io/HOML/process.html) gives a practical overview on these methods (how to implement it in R) and also gives references discussing the validity and limitations of the methods.
 
-
 ## Exercise
 
 Using the Agriculture Farm Lending data set or R package `rsample` and inspiring from this [book chapter](https://bradleyboehmke.github.io/HOML/process.html):
 
-* briefly explore the data set (the full case study is presented in the `root,+Directeur+de+la+revue,+351-1336-1-CE.pdf`)
+-   briefly explore the data set (the full case study is presented in @desbois2008)
 
 ```{r}
 #| code-fold: show
@@ -1566,6 +1535,8 @@ don_desbois <- don_desbois %>%
 
 glimpse(don_desbois)
 ```
+
+We first plot the bivariate (scatter plots) relationships between the variable of interest and the quantitative predictors:
 
 ```{r}
 #| code-fold: show
@@ -1583,7 +1554,8 @@ for(var in vars_quanti){
                     col = "dodgerblue"))
 }
 ```
-At first sight there seem to be outliers in the financial ratios values (we can deal with that )
+
+At first sight there seem to be outliers in the financial ratios values (for example r18, r19, r21). We can deal with that for example by winsorizing variables, in real life, if we were responsible for the data collection, it would be a good idea to investigate closely these outliers.
 
 ```{r}
 #| code-fold: show
@@ -1604,7 +1576,7 @@ for(var in vars_quanti){
                     col = "dodgerblue"))
 }
 ```
-
+We also show the prevalence of default for each categorical variables:
 
 ```{r, message = FALSE}
 #| code-fold: show
@@ -1637,6 +1609,8 @@ class_width <- 0.01
     replace_na(list(`0` = 0, `1` = 0)) %>% 
     mutate(`Mean(Y)` = round(`1` / (`1` + `0`), 4)))
 ```
+As an illustration we also discretize the ratio r17 and plot the conditional distribution of default given r17 classes (by 0.2):
+
 ```{r}
 (default_occurrence <- 
  ggplot(don_desbois %>% mutate(Y = if_else(Y == "1", 1, 0)), aes(x=r17, y=Y)) +
@@ -1647,9 +1621,9 @@ class_width <- 0.01
               linewidth=1.25))
 ```
 
-* perform train/test split and evaluate ROC / AUC for some `glm()` models of your choice (ie choose manually a subset of variables)
+-   perform simple Hold-out approach (train/test split) and evaluate ROC / AUC for some `glm()` model specification of your choice (ie choose manually a subset of variables)
 
-Simple random sampling (70/30)
+We choose to split using a 70%/30% repartition between training and testing set. Here the data set is balanced and train/test using a simple random sampling have a similar distribution:
 
 ```{r}
 #| code-fold: show
@@ -1680,8 +1654,6 @@ test_2   <- rsample::testing(split_1)
 
 ```
 
-Here the data set is balanced and train/test using a simple random sampling have a similar distribution. 
-
 But in case of imbalance or if we want to control the split we may want to use Stratified sampling:
 
 ```{r}
@@ -1705,6 +1677,8 @@ test_strat   <- rsample::testing(split_strat)
 
 ```
 
+We obtain the AUC and plot the ROC curves for training (for information only) and testing sets (the one we are interested in to assess models): 
+
 ```{r}
 #| code-fold: show
 # We use to illustrate the model proposed in the article
@@ -1715,14 +1689,15 @@ model_desbois <- glm(Y ~ STATUS + HECTARE + r1 + r3 + r17 + r24 + r28 + r36,
                      family = "binomial")
 
 # plot ROC / compute AUC for the training set
-pred_train <- prediction(model_desbois$fitted.values, train_strat$Y)
-perf_train <- performance(pred_train, measure = "tpr", x.measure = "fpr")
+pred_train <- ROCR::prediction(model_desbois$fitted.values, train_strat$Y)
+perf_train <- ROCR::performance(pred_train, measure = "tpr", x.measure = "fpr")
 plot(perf_train, main="ROC curve Admissions", xlab="Specificity",
      ylab="Sensitivity", col = "darkorange")
 abline(0, 1) #add a 45 degree line
 
-auc_train <- performance(pred_train, measure = "auc")
+auc_train <- ROCR::performance(pred_train, measure = "auc")
 auc_train <- auc_train@y.values[[1]]
+auc_train 
 # auc_train
 # 0.9635595
 
@@ -1730,21 +1705,26 @@ auc_train <- auc_train@y.values[[1]]
 test_predict <- predict(model_desbois, newdata=test_strat, type="response")
 
 # plot ROC / compute AUC for the training set
-pred_test <- prediction(test_predict, test_strat$Y)
-perf_test <- performance(pred_test, measure = "tpr", x.measure = "fpr")
+pred_test <- ROCR::prediction(test_predict, test_strat$Y)
+perf_test <- ROCR::performance(pred_test, measure = "tpr", x.measure = "fpr")
 plot(perf_test, add = TRUE, main="ROC curve Admissions", xlab="Specificity",
      ylab="Sensitivity", col = "dodgerblue")
 
-auc_test <- performance(pred_test, measure = "auc")
+auc_test <- ROCR::performance(pred_test, measure = "auc")
 auc_test <- auc_test@y.values[[1]]
+auc_test
+# auc_test
+# 0.9634214
+
+# As in the Desbois article, the AUC figures are around 0.96 which is quite elevated!
 
 ```
 
+-   perform k-fold cross validation and for each fold evaluate ROC / AUC for the same models as before
 
-* perform k-fold cross validation and for each fold evaluate ROC / AUC for the same models as before
+First leveraging `rsample`, the `tidyverse` and stackoverflow, efficient and compact but difficult to understand or tweak:
 
-
-Leveraging `rsample`, the `tidyverse` and stackoverflow:
+Splitting the data set into 10 flods or blocks:
 
 ```{r, warning=FALSE, message=FALSE}
 #| code-fold: show
@@ -1764,10 +1744,7 @@ cv_out <- folds_10 %>%
     unnest(fit) %>% 
     group_by(id) %>% 
     summarise(auc = pROC::roc(y, fit, plot=FALSE)$auc[1])
-
-
 ```
-
 
 ```{r, warning=FALSE, message=FALSE, warning = FALSE}
 #| code-fold: show
@@ -1801,113 +1778,144 @@ ggplot(cv_out_plot , aes(x=1-sens, y=spec, group=id, colour=col)) +
   labs(x="1-Sensitivity", y="Specificity", colour="", alpha="", size="")
 ```
 
-Implement k-fold cross validation (using AUC as metric) manually
+We implement k-fold cross validation (using AUC as metric) from scratch.
 
-```{r}
+It is a less efficient and lengthy code than before, but it is also easier to understand and adapts to your needs (we commented the code below as it takes time to run, launching five times a 10-fold Cross Validation for 10 different models, alternatively you can diminish the repeat and fold number):
+
+```{r, warning=FALSE, message=FALSE}
 #| code-fold: show
 # set.seed(1987)
 # 
 # res_list <- list()
-# nb_iter <- 2 # Usually 5 x 10 fold validation
 # 
-# for (j in 1:5) {
-#     nb_blocks <- 10 # number of folds/blocks
-#     blocks <- sample(rep(1:nb_blocks,nrow(don_desbois))[1:nrow(don_desbois)])
+# # we repeat the k-fold cross validation nb_iter times
+# nb_iter <- 5 # Usually 5 x 10 fold validation, set to 1 if too low
 # 
-#     result <- data.frame(matrix(nrow=dim(don_desbois),ncol=10))
+# for (j in 1:nb_iter) {
 # 
-#     for (i in 1:nb_blocks) {
-#           print(i)
+# # we split randomly the dataset into 10 folds
 # 
-#           XX_train <- don_desbois[blocks!=i,]
-#           XX_test <- don_desbois[blocks==i,]
+#      nb_blocks <- 10 # number of folds/blocks, set to 5 if too low
+#      blocks <- sample(rep(1:nb_blocks,nrow(don_desbois))[1:nrow(don_desbois)])
 # 
-#           # glm full
-#           class1 <- glm(Y ~ .,
-#                         data=XX_train,
-#                         family=binomial)
-#           # glm desbois
-#           class2 <- glm(Y ~ r1 + r32 + r14 + r17 + r36 + r12,
-#                         data=XX_train,
-#                         family=binomial)
+#      result <- data.frame(matrix(nrow=dim(don_desbois),ncol=10))
 # 
-#           # stepwise methods
-#           intercept_only <- glm(Y ~ 1, data=XX_train, family="binomial")
-#           # forward aic
-#           class3 <- step(intercept_only, direction='forward', test = 'LRT', scope=formula(class1),
-#                          k=2, trace = FALSE)
-#           # forward bic
-#           class4 <- step(intercept_only, direction='forward', test = 'LRT', scope=formula(class1),
-#                          k=log(nrow(don_desbois)), trace = FALSE)
-#           # backward aic
-#           class5 <- step(class1, direction='backward', test = 'LRT', scope=formula(class1),
-#                          k=2, trace = FALSE)
-#           # backward bic
-#           class6 <- step(class1, direction='backward', test = 'LRT', scope=formula(class1),
-#                          k=log(nrow(don_desbois)), trace = FALSE)
+#      for (i in 1:nb_blocks) {
+#            print(i)
 # 
+#            # we sequentially use each fold as a testing set / the complement being used as training set
+#            XX_train <- don_desbois[blocks!=i,]
+#            XX_test <- don_desbois[blocks==i,]
 # 
-#           # penalized regression
-#           # ridge
-#           # class7 <- cv.glmnet(as.matrix(XX_train[,-which(names(XX_train)=="maxO3")]),XX_train$maxO3,alpha=0)
-#           class7  <- glmnetUtils::cv.glmnet(Y ~ ., data=XX_train, family="binomial", alpha=0, type.measure = "auc")
-#           # lasso
-#           # class8 <- cv.glmnet(as.matrix(XX_train[,-which(names(XX_train)=="maxO3")]),XX_train$maxO3,alpha=1)
-#           class8  <- glmnetUtils::cv.glmnet(Y ~ ., data=XX_train, family="binomial", alpha=1, type.measure = "auc")
-#           # elastic-net
-#           # class9 <- cv.glmnet(as.matrix(XX_train[,-which(names(XX_train)=="maxO3")]),XX_train$maxO3,alpha=0.5)
-#           class9  <- glmnetUtils::cv.glmnet(Y ~ ., data=XX_train, family="binomial", alpha=0.5, type.measure = "auc")
+#            # we then fit different models we want to assess
 # 
-#           # cart
-#           class10 <- rpart::rpart(Y~., data = XX_train, method = "class")
+#            # glm full (ie a logistic regression with all variables)
+#            class1 <- glm(Y ~ .,
+#                          data=XX_train,
+#                          family=binomial)
+#            # glm desbois (ie a logistic regression with the variables selected by Desbois)
+#            class2 <- glm(Y ~ r1 + r32 + r14 + r17 + r36 + r12,
+#                          data=XX_train,
+#                          family=binomial)
 # 
-#           # saving predictions on test set
-#           result[blocks==i,1] = predict(class1, newdata=XX_test, type = "response")
-#           result[blocks==i,2] = predict(class2, newdata=XX_test, type = "response")
-#           result[blocks==i,3] = predict(class3, newdata=XX_test, type = "response")
-#           result[blocks==i,4] = predict(class4, newdata=XX_test, type = "response")
-#           result[blocks==i,5] = predict(class5, newdata=XX_test, type = "response")
-#           result[blocks==i,6] = predict(class6, newdata=XX_test, type = "response")
-#           # penalized - glmnet
-#           result[blocks==i,7] = as.vector(predict(class7, newdata=XX_test, type = "response"))
-#           result[blocks==i,8] = as.vector(predict(class8, newdata=XX_test, type = "response"))
-#           result[blocks==i,9] = as.vector(predict(class9, newdata=XX_test, type = "response"))
-#           # cart
-#           result[blocks==i,10] = predict(class10, newdata=XX_test, type = "prob")[, 2]
+#            # stepwise methods
 # 
-#     }
-#     names(result) <- c("glm full",
-#                        "glm desbois",
-#                        "forward aic",
-#                        "forward bic",
-#                        "backward aic",
-#                        "backward bic",
-#                        "ridge",
-#                        "lasso",
-#                        "elastic-net",
-#                        "cart")
+#            # the forward methods need to start with a simple model, here with only the intercept
 # 
-#     # gbm / svm lineaire / svm radial
-#     erreur <- function(X,Y) { mean((X-Y)^2)}
+#            intercept_only <- glm(Y ~ 1, data=XX_train, family="binomial")
 # 
-#     auc <- function(X,Y){
-#            pred <- ROCR::prediction(X, Y)
-#            auc <- ROCR::performance(pred, measure = "auc")
-#            auc <- auc@y.values[[1]]
-#     }
+#            # forward aic
+#            class3 <- step(intercept_only, direction='forward', test = 'LRT', scope=formula(class1),
+#                           k=2, trace = FALSE)
+#            # forward bic
+#            class4 <- step(intercept_only, direction='forward', test = 'LRT', scope=formula(class1),
+#                           k=log(nrow(don_desbois)), trace = FALSE)
 # 
-#     res_list[[j]] = list(auc = apply(result, 2, auc, Y=don_desbois$Y), result = result)
+#            # backward methods start usually from a full model
+# 
+#            # backward aic
+#            class5 <- step(class1, direction='backward', test = 'LRT', scope=formula(class1),
+#                           k=2, trace = FALSE)
+#            # backward bic
+#            class6 <- step(class1, direction='backward', test = 'LRT', scope=formula(class1),
+#                           k=log(nrow(don_desbois)), trace = FALSE)
+# 
+#            # we test here penalized logistic regression approaches, 
+#            # selecting the best penalization parameters lambda in terms of AUC using glmnet cv.glmnet function
+#            # this function implementing a k-fold cross-validation for glmnet, and producing two 'optimal' values of lambda
+#            # lambda.min (value of lambda that gives minimum metric (here AUC so maximum) and 
+#            # lambda.1se (largest value of lambda such that metric is within 1 standard error of the minimum (here AUC so maximum) metric)
+#            # the lambda.1se is used by the predict function of glmnet
+#            # using lambda.1se is an heuristic so you can challenge it, below the justification of the authors for the use of 1se:
+#            # "We often use the “one-standard-error” rule when selecting the best model; this acknowledges the fact that the risk curves 
+#            # are estimated with error, so errs on the side of parsimony."
+#            # see also here https://stats.stackexchange.com/questions/138569/why-is-lambda-within-one-standard-error-from-the-minimum-is-a-recommended-valu
+#            
+#            # more details on glmnet here https://glmnet.stanford.edu/articles/glmnet.html or in the Elements of Statistical learning
+#            
+#            # penalized regression
+#            # ridge
+#            # class7 <- cv.glmnet(as.matrix(XX_train[,-which(names(XX_train)=="maxO3")]),XX_train$maxO3,alpha=0)
+#            class7  <- glmnetUtils::cv.glmnet(Y ~ ., data=XX_train, family="binomial", alpha=0, type.measure = "auc")
+#            # lasso
+#            # class8 <- cv.glmnet(as.matrix(XX_train[,-which(names(XX_train)=="maxO3")]),XX_train$maxO3,alpha=1)
+#            class8  <- glmnetUtils::cv.glmnet(Y ~ ., data=XX_train, family="binomial", alpha=1, type.measure = "auc")
+#            # elastic-net
+#            # class9 <- cv.glmnet(as.matrix(XX_train[,-which(names(XX_train)=="maxO3")]),XX_train$maxO3,alpha=0.5)
+#            class9  <- glmnetUtils::cv.glmnet(Y ~ ., data=XX_train, family="binomial", alpha=0.5, type.measure = "auc")
+# 
+#            # cart
+#            class10 <- rpart::rpart(Y~., data = XX_train, method = "class")
+# 
+#            # we save predictions on test set for later use (for example plotting ROC curves or computing AUC or any other metric)
+# 
+#            result[blocks==i,1] = predict(class1, newdata=XX_test, type = "response")
+#            result[blocks==i,2] = predict(class2, newdata=XX_test, type = "response")
+#            result[blocks==i,3] = predict(class3, newdata=XX_test, type = "response")
+#            result[blocks==i,4] = predict(class4, newdata=XX_test, type = "response")
+#            result[blocks==i,5] = predict(class5, newdata=XX_test, type = "response")
+#            result[blocks==i,6] = predict(class6, newdata=XX_test, type = "response")
+#            # penalized - glmnet
+#            result[blocks==i,7] = as.vector(predict(class7, newdata=XX_test, type = "response"))
+#            result[blocks==i,8] = as.vector(predict(class8, newdata=XX_test, type = "response"))
+#            result[blocks==i,9] = as.vector(predict(class9, newdata=XX_test, type = "response"))
+#            # cart
+#            result[blocks==i,10] = predict(class10, newdata=XX_test, type = "prob")[, 2]
+# 
+#      }
+# 
+#     # we give names to the result columns corresponding to the models assessed
+#      names(result) <- c("glm full",
+#                         "glm desbois",
+#                         "forward aic",
+#                         "forward bic",
+#                         "backward aic",
+#                         "backward bic",
+#                         "ridge",
+#                         "lasso",
+#                         "elastic-net",
+#                         "cart")
+# 
+#      # as the AUC is the metric requested, we define a function to compute the AUC given a Scoring/Probabilities vector X and a output/response vector of true
+#      # values Y
+#      auc <- function(X,Y){
+#             pred <- ROCR::prediction(X, Y)
+#             auc <- ROCR::performance(pred, measure = "auc")
+#             auc <- auc@y.values[[1]]
+#      }
+#      # we compute the AUC to each of the fitted models
+#      res_list[[j]] = list(auc = apply(result, 2, auc, Y=don_desbois$Y), result = result)
 # }
+# 
+# # saving/persisting to rds for latter use
 # saveRDS(res_list, "res_list.rds")
 ```
-
 
 ```{r}
 res_list <- readRDS("res_list.rds")
 res_list[[1]]$auc
 res_list[[2]]$auc
 ```
-
 
 # References
 
