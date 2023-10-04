@@ -1,0 +1,950 @@
+---
+title: "Classification trees and ensemble methods"
+author: "Louis OLIVE"
+bibliography: references.bib
+link-citations: true
+format:
+  html:
+    code-copy: true
+    code-fold: false
+    # highlight-style: zenburn
+    df-print: paged
+    # include-in-header: mathjax.html
+    number-sections: true
+editor: visual
+---
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+library(tidyverse)
+```
+
+In the first lessons, we have mainly used a Logistic Regression model to deal with a binary classification / scoring problem.
+
+Logistic regression models may prove inadequate[^1] when dealing with scenarios characterized by non-linearity in the input-output relationship or when there are interactions among the input variables. This is when decision trees come to the forefront.
+
+[^1]: There are ways to cope with non-linearities using Logistic Regression model. We have briefly seen in the first course that one can modify input variables with splines or with binning. Sections 5.6 `Nonparametric Logistic Regression` and 9.1 `Generalized Additive Models` of @hastie2009 present methods to move beyond linearity in the context of Logistic Regression.
+
+Decision trees recursively partition the data by applying specific cutoff values to the features. This process creates various subsets of the data set, with each data point belonging to one of these subsets. The final subsets are known as Terminal or Leaf nodes, while the intermediate ones are referred to as Internal, Split or Decision nodes.
+
+![](images/decison_tree.png)
+
+In order to make predictions within each leaf node, the average outcome of the training data contained in that node is utilized.
+
+Numerous algorithms exist for growing decision trees, each differing in aspects such as the potential structure of the tree, the criteria for identifying splits, when to cease the splitting process...
+
+# CART
+
+We describe bellow a popular method for tree-based regression and classification called CART. We follow the terminology of @hastie2009 (chapter 9.2).
+
+Classification And Regression Tree (CART) (@Breiman83), is a recursive method:
+
+-   At the root of the tree we find the entire sample.
+
+-   Each node of the tree divides the sample into 2 branches, according to a feature variable (discrete, continuous or ordinal variable (threshold) or a nominal variable (set of categories).
+
+-   A terminal node is called a leaf. Usually the tree is represented upside down with its root at the top
+
+The tree is built by the following process: first the single variable is found which best splits the data into two groups ('best' will be defined later). The data is separated, and then this process is applied separately to each sub-group, and so on recursively until a stopping rule occurs (either no improvement can be made or the subgroups reach a minimum size).
+
+To illustrate the process we start with a Classification Tree on $x_1,x_2\in\mathbb R^2$ for the **Mixture** data set:
+
+```{r}
+#| code-fold: true
+# Simulated mixture (ORANGE/BLUE) from ESLII/ISLR
+# TODO change path
+load(file='../data/mixture.example.RData')
+
+x1_means <- mixture.example$means[,1]
+x2_means <- mixture.example$means[,2]
+mixture_means <- tibble(x1_means, x2_means) %>%
+    rowid_to_column() %>%
+    mutate(Y = if_else(rowid <= 10, "BLUE", "ORANGE"))
+
+ggplot(mixture_means) + 
+    geom_point(aes(x = x1_means, y = x2_means, col = Y), size = 3, show.legend = FALSE) +
+    scale_colour_manual(values = c("dodgerblue", "orange")) +
+    theme_void()
+```
+
+```{r}
+#| code-fold: true
+Y = mixture.example$y
+x1 = mixture.example$x[,1]
+x2 = mixture.example$x[,2]
+data_mixture_example <- tibble(Y, x1, x2) %>% mutate(Y = as_factor(Y))
+
+# Plot raw dataset
+ggplot(data_mixture_example) + 
+    geom_point(aes(x = x1, y = x2, col = Y), shape = "o", size = 4, stroke = 2, show.legend = FALSE) +
+    scale_colour_manual(values = c("dodgerblue", "orange")) +
+    theme_void()
+```
+
+```{r}
+#| code-fold: true
+new_mixture <- readRDS("../1_Scoring_and_Logistic_Regression/new_mixture.rds")
+ggplot(new_mixture[c(1:250,5001:5251),]) + # we plot only the first 250 of each class
+    geom_point(aes(x = x1, y = x2, col = Y), shape = "o", size = 4, stroke = 2, show.legend = FALSE) +
+    geom_point(data = mixture_means, aes(x = x1_means, y = x2_means, col =Y), size = 3, show.legend = FALSE) +
+    scale_colour_manual(values = c("dodgerblue", "orange", "dodgerblue", "orange")) +
+    theme_void()
+```
+
+```{r}
+#| code-fold: show
+library(rpart)
+library(rpart.plot) 
+
+mixture_example_CART <- rpart(Y~., data = data_mixture_example, method = "class")
+rpart.plot(mixture_example_CART)
+```
+Starting from the top of the tree and going down the CART algorithm splits at each node according to a binary decision.
+
+It ends up splitting the space into six regions, and then model the output by the mode/majority (classification) or proportion (scoring/probability) of $Y$ in each region. The result is the following:
+
+```{r}
+#| code-fold: true
+cutoff_1 <- 0.14
+cutoff_2 <- 2.2
+cutoff_3 <- 3.1
+cutoff_4 <- 0.98
+cutoff_5 <- 1
+
+x1_min <- -3
+x1_max <- 4.5
+x2_min <- -2
+x2_max <- 3
+
+r1x <- (x1_min + x1_max) / 2
+r1y <- (cutoff_1 + x2_min) / 2
+r2x <- (cutoff_2 + cutoff_3) / 2
+r2y <- (cutoff_1 + x2_max) / 2
+r3x <- (cutoff_3 + x1_max) / 2
+r3y <- (cutoff_1 + x2_max) / 2
+r4x <- (x1_min + cutoff_2) / 2
+r4y <- (cutoff_4 + x2_max) / 2
+r5x <- (x1_min + cutoff_5) / 2
+r5y <- (cutoff_1 + cutoff_4) / 2
+r6x <- (cutoff_2 + cutoff_5) / 2
+r6y <- (cutoff_1 + cutoff_4) / 2
+
+
+# Plot raw dataset
+ggplot(data_mixture_example) + 
+    geom_point(aes(x = x1, y = x2, col = Y), shape = "o", size = 4, stroke = 2, show.legend = FALSE) +
+    scale_colour_manual(values = c("dodgerblue", "orange")) +
+    geom_hline(yintercept = cutoff_1) +
+    # annotate("text", x=r1x, y=r1y, label = "R[1]", parse=TRUE) +
+    # annotate("text", x=x1_min-0.25, y=cutoff_1, label = "s[1]", parse=TRUE) +
+  
+    geom_segment(aes(x = cutoff_2, y = cutoff_1, xend = cutoff_2, yend = x2_max)) +
+    # annotate("text", x=cutoff_2, y=x2_max+0.2, label = "s[2]", parse=TRUE) +
+  
+    geom_segment(aes(x = cutoff_3, y = cutoff_1, xend = cutoff_3, yend = x2_max)) +
+    # annotate("text", x=r2x, y=r2y, label = "R[2]", parse=TRUE) +
+    # annotate("text", x=cutoff_3, y=x2_max+0.2, label = "s[3]", parse=TRUE) +
+    # annotate("text", x=r3x, y=r3y, label = "R[3]", parse=TRUE) +
+  
+    geom_segment(aes(x = x1_min, y = cutoff_4, xend = cutoff_2, yend = cutoff_4)) +
+    # annotate("text", x=x1_min-0.25, y=cutoff_4, label = "s[4]", parse=TRUE) +
+    # annotate("text", x=r4x, y=r4y, label = "R[4]", parse=TRUE) +
+  
+    geom_segment(aes(x = cutoff_5, y = cutoff_1, xend = cutoff_5, yend = cutoff_4)) +
+    # annotate("text", x=r5x, y=r5y, label = "R[5]", parse=TRUE) +
+    # annotate("text", x=cutoff_5, y=x2_max+0.2, label = "s[5]", parse=TRUE) +
+    # annotate("text", x=r6x, y=r6y, label = "R[6]", parse=TRUE) +
+  
+  
+    scale_x_continuous(breaks = seq(x1_min, x1_max, 1)) +
+    scale_y_continuous(breaks = seq(x2_min, x2_max, 1)) +
+    coord_cartesian(xlim = c(x1_min, x1_max), ylim = c(x2_min, x2_max), expand = FALSE, clip = 'off') +
+    theme_bw() +
+    theme(plot.margin = unit(c(0.3, 0.1, 0.1, 0.1),
+                                "inches"))
+   
+```
+
+At each step, the input variable and split-point is chosen to achieve a best fit given some criterion. Then one or both of these regions are split into two more regions, and this process is continued, until some stopping rule is applied. 
+
+For example, with the Mixture data, CART first splits at $x_2=s_1=0.14$:
+
+```{r}
+#| code-fold: true
+ggplot(data_mixture_example) + 
+    geom_point(aes(x = x1, y = x2, col = Y), shape = "o", size = 4, stroke = 2, show.legend = FALSE) +
+    scale_colour_manual(values = c("dodgerblue", "orange")) +
+    geom_hline(yintercept = cutoff_1) +
+    annotate("text", x=r1x, y=r1y, label = "R[1]", parse=TRUE) +
+    annotate("text", x=x1_min-0.25, y=cutoff_1, label = "s[1]", parse=TRUE) +
+  
+    scale_x_continuous(breaks = seq(x1_min, x1_max, 1)) +
+    scale_y_continuous(breaks = seq(x2_min, x2_max, 1)) +
+    coord_cartesian(xlim = c(x1_min, x1_max), ylim = c(x2_min, x2_max), expand = FALSE, clip = 'off') +
+    theme_bw() +
+    theme(plot.margin = unit(c(0.3, 0.1, 0.1, 0.1),
+                                "inches"))
+   
+```
+
+Then the region $x_2 < s_1$ is kept unchanged as some criterion is attained and the region $x_2 \geq s_1$ is split at $x_1 = s_2 = 2.2$:
+
+```{r}
+#| code-fold: true
+ggplot(data_mixture_example) + 
+    geom_point(aes(x = x1, y = x2, col = Y), shape = "o", size = 4, stroke = 2, show.legend = FALSE) +
+    scale_colour_manual(values = c("dodgerblue", "orange")) +
+    geom_hline(yintercept = cutoff_1) +
+    annotate("text", x=r1x, y=r1y, label = "R[1]", parse=TRUE) +
+    annotate("text", x=x1_min-0.25, y=cutoff_1, label = "s[1]", parse=TRUE) +
+  
+    geom_segment(aes(x = cutoff_2, y = cutoff_1, xend = cutoff_2, yend = x2_max)) +
+    annotate("text", x=cutoff_2, y=x2_max+0.2, label = "s[2]", parse=TRUE) +
+  
+    scale_x_continuous(breaks = seq(x1_min, x1_max, 1)) +
+    scale_y_continuous(breaks = seq(x2_min, x2_max, 1)) +
+    coord_cartesian(xlim = c(x1_min, x1_max), ylim = c(x2_min, x2_max), expand = FALSE, clip = 'off') +
+    theme_bw() +
+    theme(plot.margin = unit(c(0.3, 0.1, 0.1, 0.1),
+                                "inches"))
+   
+```
+
+Then, the region $x_2 \geq s_1, \mbox{  } x_1 > s_2$ is split at $x_1 = s_3 = 3.1$:  
+
+```{r}
+#| code-fold: true
+ggplot(data_mixture_example) + 
+    geom_point(aes(x = x1, y = x2, col = Y), shape = "o", size = 4, stroke = 2, show.legend = FALSE) +
+    scale_colour_manual(values = c("dodgerblue", "orange")) +
+    geom_hline(yintercept = cutoff_1) +
+    annotate("text", x=r1x, y=r1y, label = "R[1]", parse=TRUE) +
+    annotate("text", x=x1_min-0.25, y=cutoff_1, label = "s[1]", parse=TRUE) +
+  
+    geom_segment(aes(x = cutoff_2, y = cutoff_1, xend = cutoff_2, yend = x2_max)) +
+    annotate("text", x=cutoff_2, y=x2_max+0.2, label = "s[2]", parse=TRUE) +
+  
+    geom_segment(aes(x = cutoff_3, y = cutoff_1, xend = cutoff_3, yend = x2_max)) +
+    annotate("text", x=r2x, y=r2y, label = "R[2]", parse=TRUE) +
+    annotate("text", x=cutoff_3, y=x2_max+0.2, label = "s[3]", parse=TRUE) +
+    annotate("text", x=r3x, y=r3y, label = "R[3]", parse=TRUE) +
+  
+  
+    scale_x_continuous(breaks = seq(x1_min, x1_max, 1)) +
+    scale_y_continuous(breaks = seq(x2_min, x2_max, 1)) +
+    coord_cartesian(xlim = c(x1_min, x1_max), ylim = c(x2_min, x2_max), expand = FALSE, clip = 'off') +
+    theme_bw() +
+    theme(plot.margin = unit(c(0.3, 0.1, 0.1, 0.1),
+                                "inches"))
+```
+And the region $x_2 \geq s_1, \mbox{  } x_1 \leq s_2$ is split at $x_2 = s_4 = 0.98$:
+```{r}
+#| code-fold: true
+ggplot(data_mixture_example) + 
+    geom_point(aes(x = x1, y = x2, col = Y), shape = "o", size = 4, stroke = 2, show.legend = FALSE) +
+    scale_colour_manual(values = c("dodgerblue", "orange")) +
+    geom_hline(yintercept = cutoff_1) +
+    annotate("text", x=r1x, y=r1y, label = "R[1]", parse=TRUE) +
+    annotate("text", x=x1_min-0.25, y=cutoff_1, label = "s[1]", parse=TRUE) +
+  
+    geom_segment(aes(x = cutoff_2, y = cutoff_1, xend = cutoff_2, yend = x2_max)) +
+    annotate("text", x=cutoff_2, y=x2_max+0.2, label = "s[2]", parse=TRUE) +
+  
+    geom_segment(aes(x = cutoff_3, y = cutoff_1, xend = cutoff_3, yend = x2_max)) +
+    annotate("text", x=r2x, y=r2y, label = "R[2]", parse=TRUE) +
+    annotate("text", x=cutoff_3, y=x2_max+0.2, label = "s[3]", parse=TRUE) +
+    annotate("text", x=r3x, y=r3y, label = "R[3]", parse=TRUE) +
+  
+    geom_segment(aes(x = x1_min, y = cutoff_4, xend = cutoff_2, yend = cutoff_4)) +
+    annotate("text", x=x1_min-0.25, y=cutoff_4, label = "s[4]", parse=TRUE) +
+    annotate("text", x=r4x, y=r4y, label = "R[4]", parse=TRUE) +
+
+  
+    scale_x_continuous(breaks = seq(x1_min, x1_max, 1)) +
+    scale_y_continuous(breaks = seq(x2_min, x2_max, 1)) +
+    coord_cartesian(xlim = c(x1_min, x1_max), ylim = c(x2_min, x2_max), expand = FALSE, clip = 'off') +
+    theme_bw() +
+    theme(plot.margin = unit(c(0.3, 0.1, 0.1, 0.1),
+                                "inches"))
+```
+
+Finally only the region $x_2 \geq s_1, \mbox{  } x_1 \leq s_2, \mbox{  } x_2 < s_4$ is split at $x_1 = s_5 = 1$.
+
+
+The result of this process is a partition into the six regions $R_1, R_2, . . . , R_6$ shown below:
+
+```{r}
+#| code-fold: true
+ggplot(data_mixture_example) + 
+    geom_point(aes(x = x1, y = x2, col = Y), shape = "o", size = 4, stroke = 2, show.legend = FALSE) +
+    scale_colour_manual(values = c("dodgerblue", "orange")) +
+    geom_hline(yintercept = cutoff_1) +
+    annotate("text", x=r1x, y=r1y, label = "R[1]", parse=TRUE) +
+    annotate("text", x=x1_min-0.25, y=cutoff_1, label = "s[1]", parse=TRUE) +
+  
+    geom_segment(aes(x = cutoff_2, y = cutoff_1, xend = cutoff_2, yend = x2_max)) +
+    annotate("text", x=cutoff_2, y=x2_max+0.2, label = "s[2]", parse=TRUE) +
+  
+    geom_segment(aes(x = cutoff_3, y = cutoff_1, xend = cutoff_3, yend = x2_max)) +
+    annotate("text", x=r2x, y=r2y, label = "R[2]", parse=TRUE) +
+    annotate("text", x=cutoff_3, y=x2_max+0.2, label = "s[3]", parse=TRUE) +
+    annotate("text", x=r3x, y=r3y, label = "R[3]", parse=TRUE) +
+  
+    geom_segment(aes(x = x1_min, y = cutoff_4, xend = cutoff_2, yend = cutoff_4)) +
+    annotate("text", x=x1_min-0.25, y=cutoff_4, label = "s[4]", parse=TRUE) +
+    annotate("text", x=r4x, y=r4y, label = "R[4]", parse=TRUE) +
+  
+    geom_segment(aes(x = cutoff_5, y = cutoff_1, xend = cutoff_5, yend = cutoff_4)) +
+    annotate("text", x=r5x, y=r5y, label = "R[5]", parse=TRUE) +
+    annotate("text", x=cutoff_5, y=x2_max+0.2, label = "s[5]", parse=TRUE) +
+    annotate("text", x=r6x, y=r6y, label = "R[6]", parse=TRUE) +
+  
+  
+    scale_x_continuous(breaks = seq(x1_min, x1_max, 1)) +
+    scale_y_continuous(breaks = seq(x2_min, x2_max, 1)) +
+    coord_cartesian(xlim = c(x1_min, x1_max), ylim = c(x2_min, x2_max), expand = FALSE, clip = 'off') +
+    theme_bw() +
+    theme(plot.margin = unit(c(0.3, 0.1, 0.1, 0.1),
+                                "inches"))
+```
+
+
+We now seek to understand how CART proceeds to grow a decision tree. 
+
+The data set consists of $p$ inputs or predictors and a response variable or output $Y$, with $n$ observations:  $(x_i, y_i)$ for $i = 1,\cdots,n$, and $x_i = (x_{i1},\cdots,x_{ip})$. 
+
+The CART algorithm needs to automatically decide which variables to split on and which split points or threshold to use.
+
+Suppose first that we have a partition into $M$ regions $R_1, R_2, . . . , R_M$. Given a leaf node $m$ representing a region $R_m$ containing $n_m$ observations, we define for $k \in \{0,1\}$:
+
+$$
+\hat p^m_{k}=\frac{1}{\textrm{Card}\{x_i \in R_m\}}\sum_{x_i \in R_m}\mathbb{1}_{y_i=k}
+$$
+
+the proportion of response $1$ or $0$ in leaf node $m$. 
+
+CART models the class of output variable as a constant in each region $m$. 
+
+Let $C_m$ be the class of output variable in region $m$, for $k \in \{0,1\}$ we estimate $\mathbf P(C_m=k)$ with $\hat p^m_{k}$.
+
+And we classify the region $m$ with $\hat C_m = \underset{k \in \{0,1\}}{\operatorname{argmax}}\hat p^m_{k}$.
+
+The CART algorithm is recursive (we will propose below a simplified implementation) so that we just have to understand how CART splits a node at any step and more precisely what criterion is used.
+
+## Splitting criterion
+
+In order to classify well the data, CART seeks as much as possible to obtain pure leaf nodes (i.e. high probability for one class).
+
+At each step CART selects a predictor $X_j$ and a split-point $s$ such that splitting the current region $\mathcal R$ into the regions $\mathcal R_L(j,s)=\{X|Xj < s\}$ and $\mathcal R_R(j,s)=\{X|Xj ≥ s\}$ leads to the greatest possible reduction in a well chosen measure of impurity.
+
+Given a leaf node $m$ representing a region $R_m$ containing $n_m$ observations we denote $\mathcal I_m$ a measure of node impurity, three measures are usually retained:
+
+* the misclassification error: $\mathcal I_m =\frac{1}{n_m}\sum_{x_i \in R_m}\mathbb{1}_{y_i\neq \hat C_m}= 1-\hat p^m_{\hat C_m}=1-\max(\hat p^m, 1-\hat p^m)$
+the fraction of observations in the region that do not belong to the most common class
+
+* the Gini index: $\mathcal I_m=\sum_{k}\hat p^m_{k}(1-\hat p^m_{k})=2\hat p^m(1-\hat p^m)$
+
+* the cross-entropy or deviance: $\mathcal I_m=-\sum_{k} \hat p^m_{k}\log(1-\hat p^m_{k})=-\hat p^m\log(\hat p^m)- (1-\hat p^m)\log(1-\hat p^m)$
+
+where we have denoted $\hat p^m=\hat p^m_{1}=1-\hat p^m_{0}$
+
+```{r}
+#| code-fold: true
+imp_plot <- tibble(x=seq(0,1,by=0.01))
+imp_gini <- function(p){
+  2*p*(1-p)
+}
+imp_gini_V <- Vectorize(imp_gini)
+
+imp_entropy <- function(p){
+  if(p==0 | p==1){
+    ent = 0
+  } else{
+    ent = -p*log(p) - (1-p)*log(1-p)
+  }
+  ent
+}
+imp_entropy_V <- Vectorize(imp_entropy)
+
+imp_misclass <- function(p){
+  1-max(p,1-p)
+}
+imp_misclass_V <- Vectorize(imp_misclass)
+
+imp_plot <- imp_plot  %>%
+  mutate(gini = imp_gini_V(x),
+         entropy = imp_entropy_V(x),
+         misclass = imp_misclass_V(x)) %>% 
+  pivot_longer(!x, names_to = "impurity", values_to = "val")
+ggplot(imp_plot, aes(x=x,y=val, col=impurity))+geom_line()
+
+```
+
+We consider $\mathcal R_L(j,s)$ and $\mathcal R_R(j,s)$ two nodes/regions corresponding to a potential node/region $\mathcal R$ split. Having chosen an impurity measure CART seeks to minimize the weighted average of $\mathcal R_L(j,s)$ and $\mathcal R_R(j,s)$ impurities :
+
+$$
+n_L\mathcal I(\mathcal R_L(j,s))+n_R\mathcal I(\mathcal R_R(j,s))
+$$
+
+A justification to use Gini or Entropy instead of Misclassification is given in @hastie2009: first these two measures are differentiable, hence more amenable to numerical optimization, also considering the following example they favor purity within the nodes:
+
+* a binary classification problem with $400$ observations per class $(400, 400)$
+* first split: $(300, 100)$ with $\hat p^m_0=0.75$ and $(100, 300)$ with $\hat p^m_1=0.75$
+* second split: $(200, 400)$ with $\hat p^m_1=0.666$ and $(200, 0)$ with with $\hat p^m_0=1$
+
+```{r}
+#| code-fold: true
+n_l_1 <- 400
+n_r_1 <- 400
+p_l_1 <- 0.75
+p_r_1<- 0.75
+
+gini_1 <- (n_l_1 * imp_gini(p_l_1) + n_r_1 * imp_gini(p_r_1)) / (n_l_1  + n_r_1 )
+entropy_1 <- (n_l_1 * imp_entropy(p_l_1) + n_r_1 * imp_entropy(p_r_1)) / (n_l_1  + n_r_1 )
+misclass_1 <- (n_l_1 * imp_misclass(p_l_1) + n_r_1 * imp_misclass(p_r_1)) / (n_l_1  + n_r_1 )
+
+
+n_l_2 <- 600
+n_r_2 <- 200
+
+p_l_2 <- 2/3
+p_r_2 <- 1
+
+gini_2 <- (n_l_2 * imp_gini(p_l_2) + n_r_2 * imp_gini(p_r_2)) / (n_l_2  + n_r_2 )
+entropy_2 <- (n_l_2 * imp_entropy(p_l_2) + n_r_2 * imp_entropy(p_r_2)) / (n_l_2  + n_r_2 )
+misclass_2 <- (n_l_2 * imp_misclass(p_l_2) + n_r_2 * imp_misclass(p_r_2)) / (n_l_2  + n_r_2 )
+```
+
+We now look at the weighted average impurities for each split:
+
+* first split : gini: `r round(gini_1,2)` / entropy: `r round(entropy_1,2)` / misclassification: `r round(misclass_1,2)`
+* second split : gini: `r round(gini_2,2)` / entropy: `r round(entropy_2,2)` / misclassification: `r round(misclass_2,2)`
+
+
+Both splits share a misclassification rate of $0.25$ while Gini and Entropy are decreasing for second split. 
+Intuitively, these two measures will favor purer node than misclassification and are usually preferred in decision tree algorithms.
+
+## Tree-building process
+
+Having chosen a criterion, the CART algorithm uses top-down, greedy approach that is known as recursive binary splitting:
+
+* top-down: begins at the top of the tree and then recursively splits the input space; each split produces two new branches further down on the tree.
+
+* greedy: at each step of the building process, the best split is made without looking ahead and trying to pick a split that will lead to a better tree in some future step.
+
+**Categorical predictors**
+
+Assuming we have a categorical feature with $p$ possible values. We seek the best split into two groups, there is $2^{p-1}-1$ possible splits, which can be prohibitive for large $p$.
+
+A trick usually implemented, working only for binary classification, is to transform categorical predictors. Usually the proportion of class $1$ for each category is computed, and the algorithm splits on this numerical/ordinal column only needing $p$ splits. This trick and its proof are available in @Breiman83.
+
+In @hastie2009 it is noted that categorical predictors with many levels usually lead to severe overfitting in the context of decision trees, so that such variables might have to be transformed (by regrouping categories) or avoided.
+
+**Implementation for quantitative predictors**
+
+We implement below a simple (only working with quantitative variables) and naive recursive method reproducing roughly the CART building process.
+
+First defining the impurity measures:
+```{r}
+#| code-fold: show
+entropy <- function(tbl, y, verbose = FALSE){
+  # assumes y is a factor
+  p <- tbl %>% select(!!y) %>% table()/nrow(tbl)
+  if (verbose) {print(p)}
+  sum(-p*log2(p+1e-9))
+}
+```
+
+
+
+```{r}
+#| code-fold: show
+gini <- function(tbl, y, verbose = FALSE){
+  # assumes y if a factor
+  if(nrow(tbl) == 0) return(0)
+  p <- tbl %>% select(!!y) %>% table()/nrow(tbl)
+  if (verbose) {print(p)}
+  sum(p*(1-p))
+}
+```
+
+Then defining a function returning for a given choice of variable and split value, the impurity of the two children nodes and their weighted average impurity:
+
+```{r}
+#| code-fold: show
+impurity_decrease <- function(tbl_node, y_name, x_name, split_value, impurity = gini, min_leaf = 5){
+    
+    ret_default <- list("impurity_left"=666,
+                "impurity_right"=666,
+                "impurity_total"=666)
+    
+    tbl_left <- tbl_node %>% filter(!!x_name < !!split_value)
+    n_left <- nrow(tbl_left)
+    if (n_left < min_leaf){return(ret_default)} 
+    impurity_left <- impurity(tbl_left, y_name)
+    
+    tbl_right <- tbl_node %>% filter(!!x_name >=!!split_value)
+    n_right <- nrow(tbl_right)
+    if (n_right < min_leaf){return(ret_default)}
+    impurity_right <- impurity(tbl_right, y_name)
+    
+    return(list("impurity_left"=impurity_left,
+                "impurity_right"=impurity_right,
+                "impurity_total"=n_left/(n_left+n_right)*impurity_left+ n_right/(n_left+n_right)*impurity_right))
+}
+
+```
+
+Using this function and given a node, this functions seeks for each variable $j$ and split value $s$, the best split in terms of weighted average impurity:
+
+```{r}
+
+max_impurity_decrease <- function(tbl_node, y_name, x_names, impurity = gini, min_leaf = 5){
+    imp_node = impurity(tbl_node, y_name)
+    list_all_x <- list()
+    tbl_res <- tibble(feature_split = "zzz", split_rule = -666, imp_left = 666, imp_right = 666, imp_total = 666)
+    for (x_name in x_names){
+        list_x <- list()
+       # print(x_name)
+        for (split in unique(tbl_node %>% pull(x_name))){
+            # print(split)
+            imp_dec <- impurity_decrease(tbl_node, y_name, x_name, split, impurity, min_leaf)
+            # list_x[[j]] <- c(split, imp_dec)
+            tbl_res <-  bind_rows(tbl_res,
+                                  tibble(feature_split = as.character(x_name),
+                                         split_rule = split,
+                                         imp_node = imp_node,
+                                         imp_left = imp_dec[["impurity_left"]],
+                                         imp_right = imp_dec[["impurity_right"]],
+                                         imp_total = imp_dec[["impurity_total"]]))
+        }   
+
+    }
+    return(tbl_res)
+}
+```
+
+We test this function with the mixture data set, starting at the root node:
+
+```{r}
+tbl_node <- data_mixture_example
+y_name <- as.name("Y")
+x_names = c(as.name("x1"), as.name("x2"))
+test <- max_impurity_decrease(tbl_node, y_name, x_names)
+(test <-test %>%
+    filter(feature_split!="zzz", imp_total != 666) %>% 
+    arrange(imp_total))
+```
+
+We plot for variables $x_1$ and $x_2$ the weighted average Gini index for each possible split of data:
+```{r}
+ggplot(test , aes(x=split_rule, y =imp_total, col = feature_split)) + geom_point()
+```
+
+It is achieved for $x_2$ and a value of $0.15$ which is consistent with the `R` implementation (the slight difference $0.15$ vs $0.14$: `CART/rpart` splits variables at midpoint between successive values in data set, while we split 'on' the values):
+```{r}
+(node_val <- test %>%
+    slice(which.min(imp_total)))
+```
+
+We then implement the recursive algorithm, specifying some rules to stop (the node is pure, a maximum tree depth is attained, a minimum number of observations per node is attained).
+
+At each step a node/list stores the relevant information: split variable and value, left/right children, impurity, number of observations for class $0/1$:
+
+```{r}
+tbl_node <- data_mixture_example
+y_name <- as.name("Y")
+x_names = c(as.name("x1"), as.name("x2"))
+
+node <- list("data" = tbl_node,
+             "left" = list(),
+             "right" = list(),
+             "impurity" = 0.5,
+             "target" = y_name,
+             "features" = x_names,
+             "split" = 666,
+             "feature_split" = "",
+             "is_leaf" = FALSE,
+             "n_zero" = 0,
+             "n_one" = 0,
+             "p1" = 0,
+             "vote" = 0)
+```
+Function implementing the best split and returning the splitting rule:
+
+```{r}
+break_at <- function(node, min_leaf){
+    tbl_node <- node[["data"]]
+    y_name <- node[["target"]]
+    x_names <- node[["features"]]
+    
+    break_node <- max_impurity_decrease(tbl_node, y_name, x_names, gini, min_leaf)
+    break_node <- break_node %>% 
+        filter(feature_split!="zzz",
+               imp_total != 666,
+               imp_node != 0) %>% # don't split when node is pure (ie 0 impurity)
+        slice(which.min(imp_total))
+    return(break_node)
+}
+```
+
+Function implementing the stopping rule in the recursion (either the max tree depth is attained, or there is a single element in the node):
+
+```{r}
+conditional_split <- function(node, depth, max_depth, min_leaf)
+{
+  
+  if(nrow(node[["data"]]) == 1 | depth == max_depth) {
+      node[["is_leaf"]] <- TRUE
+      
+      y_name <- node[["target"]] 
+      table_node <- node[["data"]] %>%
+      select(!!y_name) %>%
+      table()
+      
+      #print(table_node)
+      
+      n_zero_node<- as.numeric(table_node[1])
+      node[["n_zero"]] <- n_zero_node
+      n_one_node<- as.numeric(table_node[2])
+      node[["n_one"]] <- n_one_node
+      
+      prob_node <- n_one_node / (n_zero_node+ n_one_node)
+      #print(prob_node)
+      node[["p1"]] <- prob_node
+      
+      vote_node<- ifelse(n_one_node> n_zero_node, 1, 0)
+      node[["vote"]] <- vote_node
+      
+      return(node)}
+  else grow_decision_tree(node, depth + 1, max_depth, min_leaf)
+}    
+```
+
+Function implementing the recursion and computing metrics for the nodes:
+```{r}
+grow_decision_tree <- function(node, depth = 1, max_depth = 2, min_leaf = 5)
+{
+  # before split
+  tbl_node <- node[["data"]]  
+  x_names  <- node[["features"]]  
+  y_name <- node[["target"]]  
+  
+  table_node <- tbl_node %>%
+      select(!!y_name) %>%
+      table()
+  # print(table_node)
+  n_zero_node<- as.numeric(table_node[1])
+  node[["n_zero"]] <- n_zero_node
+  n_one_node<- as.numeric(table_node[2])
+  node[["n_one"]] <- n_one_node
+  
+  prob_node <- n_one_node / (n_zero_node+ n_one_node)
+  # print(prob_node)
+  node[["p1"]] <- prob_node
+  
+  vote_node<- ifelse(n_one_node> n_zero_node, 1, 0)
+  node[["vote"]] <- vote_node
+  
+  # split using break node function
+  break_node <- break_at(node, min_leaf)
+  if(nrow(break_node) == 0) {
+      node[["is_leaf"]] <- TRUE
+      return(node)}
+  x_name_node <- as.name(break_node %>% pull(feature_split))
+  split_value_node <- break_node %>% pull(split_rule)
+
+  node[["impurity"]] <- break_node %>% pull(imp_node)
+  node[["split"]] <- split_value_node
+  node[["feature_split"]] <- x_name_node
+  
+  
+  # Recursion, calling conditional split for left/right children
+  tbl_left <- tbl_node %>% filter(!!x_name_node < !!split_value_node)  
+
+  node_left <-  list("data" = tbl_left,
+                     "left" = list(),
+                     "right" = list(),
+                     "impurity" = 666,
+                     "target" = y_name,
+                     "features" = x_names,
+                     "split" = 666,
+                     "feature_split" = "",
+                     "is_leaf" = FALSE,
+                     "p1" = 666,
+                     "vote" = 666)
+  
+  node_left <- conditional_split(node_left, depth, max_depth, min_leaf)
+  
+  tbl_right <- tbl_node %>% filter(!!x_name_node >= !!split_value_node)  
+
+  node_right <-  list("data" = tbl_right,
+                     "left" = list(),
+                     "right" = list(),
+                     "impurity" = 0.5,
+                     "target" = y_name,
+                     "features" = x_names,
+                     "split" = 666,
+                     "feature_split" = "",
+                     "is_leaf" = FALSE,
+                     "p1" = 666,
+                     "vote" = 666)
+  
+  node_right <- conditional_split(node_right, depth, max_depth, min_leaf)
+  
+  node[["left"]] <- node_left
+  node[["right"]] <- node_right
+  return(node)
+
+}
+
+# inspired from
+# https://stackoverflow.com/questions/61621974/r-recursive-tree-algorithm-with-a-random-split
+# mydata <- data.frame(x = c(10, 20, 25, 35), y = c(-10.5, 6.5, 7.5, -7.5))
+# 
+# conditional_split <- function(df, depth, max_depth)
+# {
+#   if(nrow(df) == 1 | depth == max_depth) return(df)
+#   else grow_tree(df, depth + 1, max_depth)
+# }
+# 
+# grow_tree <- function(df, depth = 1, max_depth = 3)
+# {
+#   break_at <- sample(nrow(df) - 1, 1)
+#   branched <- list(left = df[1:break_at,], right = df[-seq(break_at),])
+#   lapply(branched, conditional_split, depth, max_depth)
+# }
+# 
+# tree <- grow_tree(mydata, max_depth = 2)
+
+```
+
+We also define a function to visualize the tree and branches:
+
+```{r}
+
+print_tree <- function(grown_tree, shift =''){
+    # Node
+    if (grown_tree$is_leaf == TRUE) {
+        
+        p1 <- round(grown_tree$p1,2)
+        class <- grown_tree$vote
+        n_zero <- grown_tree$n_zero
+        n_one <- grown_tree$n_one
+        
+        cat(paste0(shift, '  '), glue::glue('prob 1: {p1}, class: {class}, 0-1: {n_zero}/{n_one}'))
+    } else{
+        # Else recurse
+        # First print the splitting variable and rule
+        if(shift == ''){
+            cat('Root' , '\n')
+        }
+        split <- grown_tree$split
+        feature_split <- grown_tree$feature_split
+        
+        #print(glue::glue('Node {feature_split} < {split} Y/N?'))
+        cat(paste0(shift, '  '), glue::glue('|> {feature_split} < {split}'), '\n')
+        cat(print_tree(grown_tree$left, paste0(shift, '  ')),'\n')
+        
+        cat(paste0(shift, '  '), glue::glue('|> {feature_split} >= {split}'), '\n')
+        cat(print_tree(grown_tree$right, paste0(shift, '  ')), '\n')
+    }
+ 
+    
+}
+```
+
+We test the recursive algorithm on the mixture data set, specifying parameters similar to `rpart`
+```{r}
+mixture_node <- grow_decision_tree(node, max_depth = 4, min_leaf = 7)
+```
+
+
+```{r}
+l <- lapply(c(0.1,0.01,0), function(x){
+  X_rpart = rpart(
+    Y ~ .,
+    method = "class",
+    data = data_mixture_example,
+    control = rpart.control(cp = x, minbucket = 7, maxdepth = 4)
+  )
+})
+
+for (i in 1:length(l)) {
+  rpart.plot(l[[i]])
+}
+
+```
+
+
+```{r}
+mixture_example_CART <- rpart(Y~., data = data_mixture_example, control = rpart.control(cp = 0.0001, minbucket = 7, maxdepth = 4), method = "class")
+```
+
+We compare our implementation with `rpart` which are equivalent (slight difference, even if a split is admissible for terminal nodes improving the impurity, `rpart` does not split if it results in two terminal nodes predicting the same class):
+
+```{r}
+print_tree((mixture_node))
+print("-------------------")
+print(mixture_example_CART)
+```
+
+```{r}
+printcp(mixture_example_CART)
+```
+
+We do the same job with the `Iris` data set which is a multivariate data set used and made famous by the British statistician and biologist Ronald Fisher in his 1936 paper about linear discriminant analysis, we restrict to a binary classification problem excluding the `setosa` family:
+
+```{r}
+data(iris)
+
+tbl_iris = iris %>%
+    as_tibble %>%
+    filter(Species!='setosa') %>% 
+    droplevels()
+
+l <- lapply(c(0.1, 0.01, 0), function(x){
+  X_rpart = rpart(
+    Species ~ .,
+    method = "class",
+    data = tbl_iris,
+    control = rpart.control(cp = x, minbucket = 5, maxdepth = 4)
+  )
+})
+
+for (i in 1:length(l)) {
+  rpart.plot(l[[i]])
+}
+
+```
+
+```{r}
+node <- list("data" = tbl_iris,
+             "left" = list(),
+             "right" = list(),
+             "impurity" = 666,
+             "target" = as.name("Species"),
+             "features" = c(as.name("Sepal.Length"), as.name("Sepal.Width"), as.name("Petal.Length"), as.name("Petal.Width")),
+             "split" = 666,
+             "feature_split" = "",
+             "is_leaf" = FALSE,
+             "n_zero" = 0,
+             "n_one" = 0,
+             "p1" = 0,
+             "vote" = 0)
+
+iris_node <- grow_decision_tree(node, max_depth = 2, min_leaf = 5)
+```
+
+```{r}
+l <- lapply(c(0.1,0.01), function(x){
+  X_rpart = rpart(
+    Species ~ .,
+    method = "class",
+    data = tbl_iris,
+    control = rpart.control(minsplit = 7,cp=x)
+  )
+})
+
+for (i in 1:length(l)) {
+  rpart.plot(l[[i]])
+}
+
+```
+
+```{r}
+print_tree((iris_node))
+```
+
+## Building strategy - Pruning
+
+The tree-building process described just above is likely to produce good predictions on the training set, but is also likely to overfit the data, leading to poor predictions on testing set or new data. This is because the resulting tree might be too complex. 
+In an extreme case, if we do not restrict the tree depth and allow a low minimum number of observations per leaf, many observations could be alone in their own region/node.
+Conversely, a smaller tree with fewer splits/nodes/regions might underfit, missing key patterns in the data.
+The right balance leading to lower variance and better interpretation at the cost of a little bias.
+
+We can see the number of nodes or tree size as a parameter allowing to tune the model complexity. 
+We have to select this parameter.
+
+The CART algorithm mainly uses the number of terminal nodes. The tree depth can also be used.
+
+The CART strategy is to build a large tree $T_0$ and then sequentially prune it to obtain a sequence of nested trees.
+
+Then a Cost complexity criterion is defined as:
+
+$$
+C_\alpha(T)=\hat R(T)+\alpha|T|
+$$
+where $\hat R(T)$ denote the empirical risk or a similar metric, $|T|$ the number of terminal nodes in $T$ and $\alpha$ is a parameter.
+
+The idea is for a sequence of $\alpha$, find the subtree $T_\alpha \subset T_0$ minimizing $C_\alpha(T)$.
+
+Then cross-validation is chosen to find and 'optimal' value of  $\alpha$.
+
+
+## Exercise
+
+Using the Desbois data set, build and draw a decision tree using `rpart`. 
+
+Compare a large tree and a smaller tree in terms of ROC/AUC/prediction on a testing set.
+
+Try to understand the output of the `printcp` function.
+
+Choose a terminal number of leafs and prune the tree using the `prune` function.
+
+Select the optimal `cp` for your tree (you can use a plot) and compare to the large and small models in terms of AUC.
+
+# Ensemble methods
+
+## Adaboost
+
+## Random Forest
+
+## Gradient Boosting
+
+## Appendix
+
+```{r}
+gini_show  <- function(tree){
+  # calculate gini index for `rpart` tree
+  ylevels <- attributes(tree)[["ylevels"]]
+  nclass <- length(ylevels)
+  yval2 <- tree[["frame"]][["yval2"]]
+  vars <- tree[["frame"]][["var"]]
+  labls = labels(tree)
+  df = data.frame(matrix(nrow=length(labls), ncol=5))
+  colnames(df) <- c("Name", "GiniIndex", "Class", "Items", "ItemProbs")
+  
+  for(i in 1:length(vars)){
+    row <- yval2[i , ]
+    node.class <- row[1]
+    j <- 2
+    node.class_counts = row[j:(j+nclass-1)]
+    j <- j+nclass
+    node.class_probs = row[j:(j+nclass-1)]
+    
+    gini = 1-sum(node.class_probs^2)
+    gini = round(gini,5)
+    name = paste(vars[i], " (", labls[i], ")")
+    df[i,] = c(name, gini, node.class, toString(round(node.class_counts,5)), toString(round(node.class_probs,5)))
+  }
+  return(df)
+}
+
+gini_show(mixture_example_CART)
+```
+Problems (see Geron p249 Figure 6-7. Sensitivity to training set rotation)
+
+
+<!--  in the original CART 5.2.2  --- -->
+
+<!-- In some data, the classes are naturally separated by hyperplanes not perpendicular to the coordinate axes. These problems are difficult for the unmodified tree structured procedure and result in large trees as the algorithm attempts to approximate the hyperplanes by multidimensional rectangular regions. To cope with such situations, the basic structure has been enhanced to allow a search for best splits over linear combinations of variables.--- -->
+
+<!--  4.6 The use of Gini impurity measure is justified --- -->
+
+<!--  https://stats.stackexchange.com/questions/4356/does-rpart-use-multivariate-splits-by-default --- -->
+
+
+# References
+
+::: {#refs}
+:::
