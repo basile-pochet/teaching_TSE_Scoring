@@ -1,0 +1,81 @@
+---
+title: "Exam"
+format:
+  html:
+    highlight: espresso
+    code-copy: true
+    df-print: paged
+    number-sections: true
+  pdf:
+    number-sections: true
+execute: 
+  cache: true
+  warning: false
+fontsize: 11pt
+---
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+library(tidyverse)
+```
+
+
+# Instructions
+
+-   The exam is open documents, open browser. If copying large chunks of codes from the browser, give a reference (link to website, stackoverflow, stats.stackexchange etc). You can reuse code from the two first lessons hosted here [https://github.com/louis-olive/teaching_TSE_Scoring/](https://github.com/louis-olive/teaching_TSE_Scoring/), click on Code/Download ZIP for the last version:
+
+![](assets/github_repo.png)
+
+-   The first parts of the exam are to be performed in-class (**TO DO in-class** in the exam document). The in-class exam will last two hours (10:30-12:30).
+
+-   You must use the R programming language, preferably through RStudio. Your code for analysis should use one of the following formats: preferably quarto Markdown (.qmd, as done in the course), but you might prefer R Markdown (.Rmd) or an R file (.R).
+
+-   Packages that you may need besides `base R` and `stats` (`glm()`, `step()`) that have been used in the course include:
+
+`tidyverse`, `broom`, `ROCR`, `car`, `aod`, `rsample`, `bestglm`, `glmnet`, `glmnetUtils`, `splines`
+
+
+You can install them using the following code (uncomment):
+```{r}
+# # UNCOMMENT IF NEEDED
+# # https://statsandr.com/blog/an-efficient-way-to-install-and-load-r-packages/
+# # Package names
+# packages <- c("tidyverse", "ROCR", "car", "aod", "broom", "rsample", "bestglm", 
+# "glmnet", "glmnetUtils", "splines")
+# 
+# # Install packages not yet installed
+# installed_packages <- packages %in% rownames(installed.packages())
+# if (any(installed_packages == FALSE)) {
+#   install.packages(packages[!installed_packages])
+# }
+# 
+# # Packages loading
+# invisible(lapply(packages, library, character.only = TRUE))
+# 
+# 
+# # Additional packages used throughout the course but not needed for the analysis
+# additional_packages <- c( "purrr", "pROC", "foreign", "patchwork", "class",
+# "scales", "rpart", "rpart.plot", "DescTools")
+```
+
+Check that it works on your computer before the course.
+
+-   For your report: either render a .html file of your analysis (when using .qmd/.Rmd) or provide a rich document with your text plus tables/plots of your analysis (.docx or .pdf). For the last solution again no recommendation but [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) is free and runs cross-platforms.
+
+-   The code file and report's general readability will impact the grading as well as the richness of their content (do not hesitate to comment on your intents, assumptions, findings, conclusions, especially in the take home part).
+
+-   The .html file for report should be readable in a standard web browser (Chrome, Safari, Firefox, Edge ...), alternatively .docx/.pdf should be valid. The .qmd/.Rmd/.R code file should run without errors (if something is not working as you wish, comment in the code with your intents). They should be posted before 12:30 on 27 September 2023 for the in-class part to my two email addresses `louis.olive@ut-capitole.fr`, `louis.olive@gmail.com` (in case the first one encounters issues) with subject `SCORING EXAM - YOUR NAME`. You can prepare your email in advance to save time at the end of exam. 
+
+-   Allow yourself at least 15 minutes before the end to check your .qmd/.Rmd/.R file is running and you have a readable report. If you finish before the end, and are happy with the result post me your code/report and take a well deserved rest!
+
+-   If you are not happy with some or all parts of the in-class analysis, you might complete/correct/improve it at home, if it improves your grading a maximum of half of points will be given (for each relevant improvement).
+
+-   For the take-home part the deadline is 4 October 2023 00:00.
+
+-   Regarding the grading:
+
+    -   30% of the total points for the in-class part, 70% for the at-home part
+    -   the rest will be detailed in-class.
+
+
+
+
