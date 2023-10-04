@@ -15,7 +15,6 @@ format:
     toc_depth: 3
     toc_float: yes
 execute: 
-  cache: true
   warning: false
 fontsize: 11pt
 ---
@@ -142,13 +141,13 @@ Check that it works on your computer before the course.
 
 -   The code file and report's general readability will impact the grading as well as the richness of their content (do not hesitate to comment on your intents, assumptions, findings, conclusions, especially in the take home part).
 
--   The .html file for report should be readable in a standard web browser (Chrome, Safari, Firefox, Edge ...), alternatively .docx/.pdf should be valid. The .qmd/.Rmd/.R code file should run without errors (if something is not working as you wish, comment in the code with your intents). They should be posted before 12:30 on 27 September 2023 for the in-class part to my two email addresses `louis.olive@ut-capitole.fr`, `louis.olive@gmail.com` (in case the first one encounters issues) with subject `SCORING EXAM - YOUR NAME`. You can prepare your email in advance to save time at the end of exam. 
+-   The .html file for report should be readable in a standard web browser (Chrome, Safari, Firefox, Edge ...), alternatively .docx/.pdf should be valid. The .qmd/.Rmd/.R code file should run without errors (if something is not working as you wish, comment in the code with your intents). They should be posted before 12:30 on 4 October 2023 for the in-class part to my two email addresses `louis.olive@ut-capitole.fr`, `louis.olive@gmail.com` (in case the first one encounters issues) with subject `SCORING EXAM - YOUR NAME`. You can prepare your email in advance to save time at the end of exam. 
 
 -   Allow yourself at least 15 minutes before the end to check your .qmd/.Rmd/.R file is running and you have a readable report. If you finish before the end, and are happy with the result post me your code/report and take a well deserved rest!
 
 -   If you are not happy with some or all parts of the in-class analysis, you might complete/correct/improve it at home, if it improves your grading a maximum of half of points will be given (for each relevant improvement).
 
--   For the take-home part the deadline is 4 October 2023 00:00.
+-   For the take-home part (as well as completing the in class analysis) the deadline is 10 October 2023 00:00.
 
 -   Regarding the grading:
 
@@ -195,6 +194,7 @@ In a **first step**, using (i) the methods from the course, (ii) only the featur
     -   or automatic best subset (`bestglm`) / stepwise selection (`step`) with criterion of your choice,
 
     -   or penalized lasso regression (`glmnet`/`glmnetUtils`), the predictors might need to be standardized if they have a different nature/scale, (for this, use the option `standardize=TRUE`, fitted coefficient will be automatically scaled back to the original scale of the data).
+    
 
 -   For the selected model (**your_model**):
 
@@ -238,7 +238,7 @@ When finishing this step you will have 3 models at hand (**your_models**), to ke
 
 In this part, you will try to improve the model devised in last part (**your_improved_model**):
 
-* it may involve improving variable selection, creating or transforming variables,
+* it may involve improving variable selection, creating or transforming variables (for example creating the ratio of some variables), at natural idea is to scale variables by the total asset as in [Altman Z-score](https://en.wikipedia.org/wiki/Altman_Z-score).
 
 * you may, if relevant, consider potential non-linearities or interactions in features (for example using: polynomial expansion or `splines` to transform variables or by binning some variables into qualitative variables, as seen in class for the mixture data set),
 
@@ -246,7 +246,7 @@ In this part, you will try to improve the model devised in last part (**your_imp
 
 * you can also try to deal with response variable imbalance (there are more healthy companies than defaulting in the data set) by sampling differently your training set (for example undersampling the healthy cases).
 
-In this part you need to implement three different improvements to get full score (i.e. three models). You may combine these improvements in a fourth model.
+In this part you need to implement two different improvements to get full score (i.e. two models). You may combine these improvements into a third model.
 
 Explain or motivate briefly your choices and assumptions.
 
