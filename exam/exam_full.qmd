@@ -238,7 +238,7 @@ When finishing this step you will have 3 models at hand (**your_models**), to ke
 
 In this part, you will try to improve the model devised in last part (**your_improved_model**):
 
-* it may involve improving variable selection, creating or transforming variables (for example creating the ratio of some variables), at natural idea is to scale variables by the total asset as in [Altman Z-score](https://en.wikipedia.org/wiki/Altman_Z-score).
+* it may involve improving variable selection, creating or transforming variables (for example creating the ratio of some variables), for example a natural idea is to scale variables by the total asset as in [Altman Z-score](https://en.wikipedia.org/wiki/Altman_Z-score), you can also winsorize variables if needed.
 
 * you may, if relevant, consider potential non-linearities or interactions in features (for example using: polynomial expansion or `splines` to transform variables or by binning some variables into qualitative variables, as seen in class for the mixture data set),
 
