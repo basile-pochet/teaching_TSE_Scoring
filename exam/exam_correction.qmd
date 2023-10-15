@@ -1,0 +1,1707 @@
+---
+title: "Exam"
+format:
+  html:
+    highlight: espresso
+    code-copy: true
+    df-print: paged
+    number-sections: true
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+  pdf:
+    number-sections: true
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+execute: 
+  warning: false
+fontsize: 11pt
+bibliography: references.bib
+---
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+library(tidyverse)
+```
+
+# Introduction
+
+The goal of this exam is to build and assess a predictive model to quantify the probability of corporate default **with a 1-year horizon**, using annual financial statement data reported by companies. The companies are listed on the US stock market.
+
+Financial statement data relating to these companies is available in a data set. The companies have been anonymized and are designed by a unique index (column `company_id`).
+
+The fiscal year to which the financial statements pertain is given (column `fiscal_year`). We assume that fiscal years run from January to December for all companies in the data set, and that financial statements are published and available the first day of next fiscal year.
+
+When a corporate default (column `default`) occurs for a company during a given fiscal year, say `2011`, the observation (ie row in data set) of the preceding fiscal year (`2010`) for this company shows a value of `1` in the column `default`, `0` otherwise.
+
+If an observation for fiscal year `2010` shows `1` in the column `default` it means that default has occurred sometimes in `2011`. To simplify and in the absence of information we assume that default event has occurred the last day `2011`, and consequently that the event has been recorded the first day of `2012`.
+
+Your goal is to predict corporate default with a 1-year horizon. We assume that we make the predictions at the beginning of each year.
+
+Given financial data up to a certain year, say `2011` (available the first day of `2012`), we do not yet know which companies will default by year end `2012`, but we want to predict it (hence the goal: predict corporate default with a 1-year horizon).
+
+To make the predictions, we only know that some companies have defaulted by year end `2011` and before; this information being recorded in an observation with fiscal year `2010` and before. We also know the financial data for fiscal year `2011` and before.
+
+We briefly describe the columns of the data set (Rows: 61,092 Columns: 23):
+
+-   `company_id`: a unique identifier for the company.
+
+-   `default`: 0 for a healthy company (ie no default during the next fiscal year), 1 for a company in default during the next fiscal year; to simplify it is assumed the default event occurs the last day of the next fiscal year.
+
+-   `default_will_occur`: 0 for a company that will not default in any of the next observed fiscal years, 1 for a company defaulting during one of the next observed fiscal years; when default occurs observations stop for the company.
+
+-   `fiscal_year`: a fiscal year is a twelve-month period chosen by a company to report its financial information; to simplify we assume here that it runs from January to December for each company, and financial statements are published the first day of next fiscal year.
+
+-   `fiscal_year_default`: if applicable the fiscal year at which a company has defaulted, NA otherwise.
+
+-   `cogs`: the cost of goods sold (COGS) is the sum of all direct costs associated with making a product. It appears on an income statement and typically includes money mainly spent on raw materials and labour. It does not include costs associated with marketing, sales or distribution.
+
+-   `current_asset`: the total value of a company's current assets; a current asset is any asset which can reasonably be expected to be sold, consumed, or exhausted through the normal operations of a business within the coming year.
+
+-   `da`: depreciation and amortization ; refers to the decline in value over time of tangible assets (depreciation: real estate, buildings, plants, equipment) or intangible assets (amortization: trade names, copyrights, patents, trademarks).
+
+-   `ebit`: earnings before interest, taxes (EBIT).
+
+-   `ebitda`: earnings before interest, taxes, depreciation, and amortization (EBITDA) is a widely used measure of core corporate profitability. EBITDA is calculated by adding interest, tax, depreciation, and amortization expenses to net income.
+
+-   `gp`: gross profit is the profit a company makes after deducting the costs associated with making and selling its products, or the costs associated with providing its services; calculated by subtracting the COGS from revenue/sales.
+
+-   `invt`: inventory or stock refers to the goods and materials that a business holds for the ultimate goal of resale, production or utilization.
+
+-   `mv`: market value, here market capitalization as companies are listed.
+
+-   `ni`: net income (also total comprehensive income, net earnings, net profit, bottom line, sales profit, or credit sales) company's income minus cost of goods sold, expenses, depreciation and amortization, interest, and taxes for an accounting period.
+
+-   `nsale`: sales refer to any operating revenues that a company earns through its business activities, such as selling goods, services, products; here net sales are provided ie sales minus applicable sales returns, allowances, and discounts.
+
+-   `opex`: operating expenses are expenses that a business incurs through its normal business operations; they include rent, equipment, inventory costs, marketing, payroll, insurance, step costs, and funds allocated for research and development.
+
+-   `re`: retained earnings are the cumulative net earnings or profits of a company after accounting for dividend payments, it shows the net income that a company has saved over time, and therefore has the ability to reinvest in the business or distribute to shareholders.
+
+-   `ta`: total asets, the complete collection of assets or valuable items owned by a company.
+
+-   `tcl`: total current liabilities is the sum of all current liabilities which are a company's short-term financial obligations that are due within one year (or within a normal operating cycle).
+
+-   `tl`: total liabilities are the combined debts and obligations that an individual or company owes to outside parties.
+
+-   `tltd`: total long term debt is any amount of outstanding debt a company holds that has a maturity of 12 months or longer.
+
+-   `tr`: total revenue (or sales, top line, gross income) is the money generated from normal business operations. It is the top line figure from which costs are subtracted to determine net income.
+
+-   `trec`: total receivable are the balance of money due to a firm for goods or services delivered or used but not yet paid for by customers.
+
+Below we load the data set and display its structure:
+
+```{r}
+# loading and printing the structure of the dataset
+default_dataset <- read_csv('data/default_dataset.csv')
+glimpse(default_dataset)
+```
+
+# Instructions
+
+-   The exam is open documents, open browser. If copying large chunks of codes from the browser, give a reference (link to website, stackoverflow, stats.stackexchange etc). You can reuse code from the two first lessons hosted here <https://github.com/louis-olive/teaching_TSE_Scoring/>, click on Code/Download ZIP for the last version:
+
+![](assets/github_repo.png)
+
+-   The first parts of the exam are to be performed in-class (**TO DO in-class** in the exam document). The in-class exam will last two hours (10:30-12:30).
+
+-   You must use the R programming language, preferably through RStudio. Your code for analysis should use one of the following formats: preferably quarto Markdown (.qmd, as done in the course), but you might prefer R Markdown (.Rmd) or an R file (.R).
+
+-   Packages that you may need besides `base R` and `stats` (`glm()`, `step()`) that have been used in the course include:
+
+`tidyverse`, `broom`, `ROCR`, `car`, `aod`, `rsample`, `bestglm`, `glmnet`, `glmnetUtils`, `splines`
+
+You can install them using the following code (uncomment):
+
+```{r}
+# # UNCOMMENT IF NEEDED
+# # https://statsandr.com/blog/an-efficient-way-to-install-and-load-r-packages/
+# # Package names
+# packages <- c("tidyverse", "ROCR", "car", "aod", "broom", "rsample", "bestglm", "glmnet", "glmnetUtils", "splines")
+# 
+# # Install packages not yet installed
+# installed_packages <- packages %in% rownames(installed.packages())
+# if (any(installed_packages == FALSE)) {
+#   install.packages(packages[!installed_packages])
+# }
+# 
+# # Packages loading
+# invisible(lapply(packages, library, character.only = TRUE))
+# 
+# 
+# # Additional packages used throughout the course but not needed for the analysis
+# additional_packages <- c( "purrr", "pROC", "foreign", "patchwork", "class", "scales", "rpart", "rpart.plot", "DescTools")
+```
+
+Check that it works on your computer before the course.
+
+-   For your report: either render a .html file of your analysis (when using .qmd/.Rmd) or provide a rich document with your text plus tables/plots of your analysis (.docx or .pdf). For the last solution again no recommendation but [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) is free and runs cross-platforms.
+
+-   The code file and report's general readability will impact the grading as well as the richness of their content (do not hesitate to comment on your intents, assumptions, findings, conclusions, especially in the take home part).
+
+-   The .html file for report should be readable in a standard web browser (Chrome, Safari, Firefox, Edge ...), alternatively .docx/.pdf should be valid. The .qmd/.Rmd/.R code file should run without errors (if something is not working as you wish, comment in the code with your intents). They should be posted before 12:30 on 27 September 2023 for the in-class part to my two email addresses `louis.olive@ut-capitole.fr`, `louis.olive@gmail.com` (in case the first one encounters issues) with subject `SCORING EXAM - YOUR NAME`. You can prepare your email in advance to save time at the end of exam.
+
+-   Allow yourself at least 15 minutes before the end to check your .qmd/.Rmd/.R file is running and you have a readable report. If you finish before the end, and are happy with the result post me your code/report and take a well deserved rest!
+
+-   If you are not happy with some or all parts of the in-class analysis, you might complete/correct/improve it at home, if it improves your grading a maximum of half of points will be given (for each relevant improvement).
+
+-   For the take-home part the deadline is 4 October 2023 00:00.
+
+-   Regarding the grading:
+
+    -   30% of the total points for the in-class part, 70% for the at-home part
+    -   in-class: 10% of the total points for each parts: Data exploration, First step and Second step
+    -   at-home: 5% for the Third step, the rest will be detailed at the end of in-class exam.
+
+You should follow the following plan in you report:
+
+# Data Exploration (10% total points)
+
+### TO DO in-class (\~30-45 minutes) with first priority\*\*
+
+In the first part, you will need to explore carefully the data set, for example:
+
+-   providing relevant descriptive statistics,
+
+-   showing correlated features,
+
+-   showing/plotting individual features "interaction" with the response variable,
+
+-   also taking into account the time-series/temporal aspect of the data set.
+
+Visualizations are expected.
+
+You can remove observations from data if justified.
+
+You might also need to remove some feature variables is perfectly co-linear or any other reason.
+
+Also try to understand how you will use the data set to solve the problem.
+
+### Proposed solution
+
+We first start by checking for each fiscal year, the number of "next-year" default occurring and computing the proportion of defaulting firms (note that we use the `default` variable):
+
+```{r}
+# checking summary statistics with the article (its identical)
+default_dataset %>%
+  group_by(fiscal_year) %>%
+  summarise(total_firm = n_distinct(company_id),
+            default = sum(default),
+            pct_default = default / total_firm)
+```
+
+We notice that the default event is a rare event, varying with vintage (picking up above 1% around the Great Financial Crisis)
+
+We visualize correlations between predictors
+
+```{r, warning=FALSE}
+
+cor_default <- cor(default_dataset %>% select(cogs:trec))
+
+corrplot::corrplot(cor_default)
+```
+
+At first sight, we will have to investigate (ebit,ebitda, gp), (cogs, nsale, opex, tr) and (ta, tcl, tl) which seem strongly correlated.
+
+We sort by the most positively correlated coefficients:
+
+```{r, warning=FALSE}
+# http://www.sthda.com/english/wiki/correlation-matrix-a-quick-start-guide-to-analyze-format-and-visualize-a-correlation-matrix-using-r-software
+# ++++++++++++++++++++++++++++
+# flattenCorrMatrix
+# ++++++++++++++++++++++++++++
+# cormat : matrix of the correlation coefficients
+flattenCorrMatrix <- function(cormat) {
+  ut <- upper.tri(cormat)
+  tibble(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut]
+  )
+}
+
+flattenCorrMatrix(cor_default)
+
+flattenCorrMatrix(cor_default) %>%
+  arrange(desc(cor)) %>% 
+  filter(cor > 0.90)
+
+# # A tibble: 190 × 3
+# row    column   cor
+# <chr>  <chr>  <dbl>
+# 1 nsale  tr     1    
+# 2 nsale  opex   0.994
+# 3 opex   tr     0.994
+# 4 cogs   opex   0.989
+# 5 ebit   ebitda 0.980
+# 6 cogs   nsale  0.978
+# 7 cogs   tr     0.978
+# 8 ta     tl     0.969
+# 9 ebitda gp     0.925
+# 10 ebitda ta     0.924
+# # ℹ 180 more rows
+# # ℹ Use `print(n = ...)` to see more rows
+```
+
+nsale and tr are perfectly colinear and indeed share the same values, we remove tr from the predictors.
+
+Operating expenses (opex) and cost of goods sold (cogs) [see here](https://www.investopedia.com/ask/answers/101314/what-are-differences-between-operating-expenses-and-cost-goods-sold-cogs.asp) are two expenditures incurred by businesses. Operating expenses refer to expenditures that are not directly tied to the production of goods or services, such as rent, utilities, office supplies, and legal costs. Cost of goods sold refers to expenses directly related to the production of a product, such as the materials needed to assemble a product and the transportation needed to bring goods from a distributor to a retailer. Both types of expenses are recorded as separate line items on a company's income statement. We could combine these two variables into a new variable expenditure. They are also strongly linked to the revenue/sales of the company. All of this suggest an important role of variable selection in the analysis.
+
+```{r, warning=FALSE}
+PerformanceAnalytics::chart.Correlation(default_dataset %>%
+                                          select(nsale, tr, opex, cogs),
+                                        histogram=TRUE, pch=19)
+```
+
+```{r, warning=FALSE}
+default_dataset %>%
+  select(opex, cogs, nsale)
+```
+
+```{r, warning=FALSE}
+PerformanceAnalytics::chart.Correlation(default_dataset %>%
+                                          select(ebit, ebitda, gp, ta, da),
+                                        histogram=TRUE, pch=19)
+```
+
+We can remove ebitda as ebitda is obtained as ebit + da (except for two observations):
+
+```{r}
+default_dataset %>%
+  mutate(ebitda_check = ebit + da) %>%
+  select(ebit, da, ebitda_check, ebitda) %>%
+  filter(abs(ebitda_check - ebitda)>1e-3)# A tibble: 2 × 4
+
+# ebit    da ebitda_check ebitda
+# <dbl> <dbl>        <dbl>  <dbl>
+# 1 2.00   2.38         4.38   5.56
+# 2 0.992 10.9         11.9   12.1 
+```
+
+```{r, warning=FALSE}
+PerformanceAnalytics::chart.Correlation(default_dataset %>%
+                                          select(ta, tl, tcl, current_asset, mv),
+                                        histogram=TRUE, pch=19)
+```
+
+Also total assets (ta) and liabilities (tl) which are two sides of the balance sheet are strongly correlated as well as their sub-accounts.
+
+Also total assets (ta), liabilities (tl) or market value (mv) would be natural scaling factors relating to the size of the balance sheet / company. It could lead to more comparable balance sheet or income statement figures.
+
+For visualization and latter use we scale predictor by `ta` and also winsorize variables, we also remove perfect co-linear predictors:
+
+```{r}
+# -   showing/plotting individual features "interaction" with the response variable,
+
+default_exam <- default_dataset %>%
+  select(-ebitda,-tr,- fiscal_year_default) %>% 
+  mutate(Y = default,
+         Y_alt = default_will_occur) %>% 
+  # scaling by `ta`
+  mutate(across(.cols = cogs:trec,
+                .fns = ~ . / ta,
+                .names = "{.col}_/_ta")) %>% 
+  # winsorizing
+  mutate(across(.cols = cogs:trec,
+                .fns = ~ DescTools::Winsorize(.x , probs = c(0.05, 0.95)),
+                .names = "{.col}_ws")) %>%
+  # scaling by `ta` and winsorizing
+  mutate(across(.cols = cogs:trec,
+                .fns = ~ DescTools::Winsorize(. / ta, probs = c(0.05, 0.95)),
+                .names = "{.col}_/_ta_ws"))
+```
+
+We first plot default variable with respect to unscaled predictors:
+
+```{r}
+vars_quanti <- names(default_exam %>%
+                       select_if(is.numeric) %>%
+                       select(-Y_alt, -Y, -company_id, -default,
+                              -default_will_occur, -fiscal_year) %>%
+                       select(!matches("_/_ta|_ws"))) 
+```
+
+```{r, cache=TRUE}
+# for report only
+vars_quanti <- c("ta", "tl", "ni")
+
+for(var in vars_quanti){
+  var <- as.name(var)
+  print(ggplot(default_exam, aes(x=!! var,y = Y)) +
+          geom_jitter(height = 0.1, width = 0))
+}
+```
+It is difficult to conclude anyting from these plots as financial accounts do not have the same scale (cmpanies total assets/liabilities vary a lot).
+
+We plot default variable with respect to predictors rescaled using total assets (`ta`):
+
+```{r}
+vars_quanti <- names(default_exam %>%
+                       select_if(is.numeric) %>%
+                       select(-Y_alt, -Y, -company_id, -default,
+                              -default_will_occur, -fiscal_year) %>%
+                       select(matches("_/_ta")) %>% 
+                       select(!matches("_/_ta_ws")) %>% 
+                       select(!matches("_ws")))
+```
+
+```{r, cache=TRUE}
+# for report only
+vars_quanti <- c("ebit_/_ta", "tl_/_ta", "ni_/_ta")
+
+for(var in vars_quanti){
+  var <- as.name(var)
+  print(ggplot(default_exam, aes(x=!! var, y = Y_alt)) +
+          geom_jitter(height = 0.1, width = 0) +
+          geom_smooth(method = "glm", 
+                      formula = y ~ x,
+                      method.args = list(family = "binomial"), 
+                      se = FALSE,
+                      col = "dodgerblue"))
+}
+```
+Outliers appear on these plots, in particular some companies (ca. 200) exhibit strongly negative ebit and/or near zero total assets without being classified as defaulting (most of them are nonetheless removed form the dat set, i.e. they do not live up to the maximum date). Since the companies are anonymized and we cannot investigate further we remove these outliers from the data set:
+
+```{r}
+outliers_ebit <- default_exam %>%
+  filter(`ebit_/_ta` < -10, default_will_occur == 0) %>%
+  distinct(company_id) %>%
+  pull(company_id)
+```
+
+```{r}
+vars_quanti <- names(default_exam %>%
+                       select_if(is.numeric) %>%
+                       select(-Y_alt, -Y, -company_id, -default,
+                              -default_will_occur, -fiscal_year) %>%
+                       select(matches("_/_ta_ws"))) 
+```
+
+```{r, cache=TRUE}
+# for report only
+vars_quanti <- c("mv_/_ta_ws", "ni_/_ta_ws", "tcl_/_ta_ws", "tl_/_ta_ws")
+
+for(var in vars_quanti){
+  var <- as.name(var)
+  print(ggplot(default_exam %>% filter(!company_id %in% outliers_ebit),
+               aes(x=!! var, y = Y_alt)) +
+          geom_jitter(height = 0.1, width = 0) +
+          geom_smooth(method = "glm", 
+                      formula = y ~ x,
+                      method.args = list(family = "binomial"), 
+                      se = FALSE,
+                      col = "dodgerblue"))
+}
+```
+
+# Model building and assessment
+
+## First step (10% total points)
+
+### TO DO in-class (\~45minutes-1h) with second priority
+
+In a **first step**, using (i) the methods from the course, (ii) only the feature variables provided in the data set (`cogs:trec`) and (iii) using the full data set provided (for this first step do not use hold-out/cross-validation approaches), construct a baseline Logistic Regression model that you "believe" is "valid":
+
+-   For this use a method of your choice seen in course, either:
+
+    -   manual selection using hints from data exploration and statistical tests,
+
+    -   or automatic best subset (`bestglm`) / stepwise selection (`step`) with criterion of your choice,
+
+    -   or penalized lasso regression (`glmnet`/`glmnetUtils`), the predictors might need to be standardized if they have a different nature/scale, (for this, use the option `standardize=TRUE`, fitted coefficient will be automatically scaled back to the original scale of the data).
+    
+
+-   For the selected model (**your_model**):
+
+    -   show how to interpret model coefficients for at least two variables (odds ratio, tests, confidence intervals)
+
+    -   compare using a statistical test of your choice to a full model (**full_model** using all the variables you retained in the Data Exploration part)
+
+    -   if you "fail" to construct a model that you "believe" is valid, choose as a best effort a model including a few variables (at least 4).
+
+### Proposed solution
+
+We first fit the full model with all variables involved:
+
+* using unscaled financial variables
+
+```{r}
+model_full <- glm(Y~., data=default_exam %>%
+                    filter(!company_id %in% outliers_ebit) %>%
+                    select(Y, `cogs_/_ta`:`trec_/_ta`, -`ta_/_ta`), family="binomial")
+summary(model_full)
+```
+
+* using scaled (`ta`) and winsorized financial variables:
+
+```{r}
+model_full <- glm(Y~., data=default_exam %>%
+                    filter(!company_id %in% outliers_ebit) %>%
+                    select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                  family="binomial")
+summary(model_full)
+```
+
+```{r}
+model_full_alt <- glm(Y_alt~., data=default_exam %>%
+                    filter(!company_id %in% outliers_ebit) %>%
+                    select(Y_alt, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                    family="binomial")
+summary(model_full_alt)
+```
+
+
+
+```{r, warning=FALSE}
+car::Anova(model_full, type=3, test.statistic = "Wald")
+```
+
+```{r, warning=FALSE}
+car::Anova(model_full, type=3, test.statistic = "LR")
+```
+
+```{r}
+# manual_selection <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` +
+#                          `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` +
+#                          `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` +
+#                          `tl_/_ta_ws`  + `trec_/_ta_ws`"
+
+manual_selection <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` + `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + `tl_/_ta_ws`  + `trec_/_ta_ws`"
+
+model_manual <- glm(as.formula(manual_selection), data=default_exam %>%
+                    filter(!company_id %in% outliers_ebit) %>%
+                    select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`), family="binomial")
+summary(model_manual)
+```
+
+      
+We perform stepwise variable selection:
+
+```{r}
+model_full <- glm(Y~., data=default_exam %>%
+                    filter(!company_id %in% outliers_ebit) %>%
+                    select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`), family="binomial")
+
+intercept_only <- glm(Y~1, data=default_exam %>%
+                    filter(!company_id %in% outliers_ebit) %>%
+                    select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`), family="binomial")
+```
+
+```{r}
+forward_aic <- step(intercept_only,
+                    direction='forward',
+                    test = 'LRT',
+                    scope=formula(model_full), k=2,
+                    trace = FALSE)
+summary(forward_aic)
+```
+
+```{r}
+forward_bic <- step(intercept_only,
+                    direction='forward',
+                    test = 'LRT',
+                    scope=formula(model_full),
+                    k=log(nrow(default_exam %>%
+                      filter(!company_id %in% outliers_ebit))),
+                    trace = FALSE)
+summary(forward_bic)
+```
+
+```{r}
+backward_bic <- step(model_full,
+                     direction='backward',
+                     test = 'LRT',
+                     scope=formula(model_full),
+                     k=log(nrow(default_exam %>%
+                       filter(!company_id %in% outliers_ebit))),
+                     trace = FALSE)
+summary(backward_bic)
+```
+
+Forward and Backward stepwise selection using the BIC criterion using the full dataset agree on the choice of variables.
+
+       
+We perform penalized Logistic Regression (Lasso):
+
+
+```{r}
+default_lasso <- glmnetUtils::cv.glmnet(Y ~ ., 
+                     data=default_exam %>%
+                       filter(!company_id %in% outliers_ebit) %>%
+                       select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                     family="binomial",
+                     alpha=1,
+                     standardize = TRUE,
+                     type.measure = "auc")
+```
+
+```{r}
+lasso_coeffs_1se <- coef(default_lasso, s = "lambda.1se")
+tibble(name = lasso_coeffs_1se@Dimnames[[1]][lasso_coeffs_1se@i + 1],
+       coefficient = lasso_coeffs_1se@x)
+```
+
+```{r}
+lasso_coeffs_min <- coef(default_lasso, s = "lambda.min")
+tibble(name = lasso_coeffs_min@Dimnames[[1]][lasso_coeffs_min@i + 1],
+       coefficient = lasso_coeffs_min@x)
+```
+
+```{r}
+plot(default_lasso)
+```
+
+
+We briefly show how to interpret model coefficients (odds ratio, tests, confidence intervals):
+
+We choose the variables `ni_/_ta_ws` and `ti_/_ta_ws` in the manual model
+
+In terms of odds ratio:
+
+A 1 unit increase in `ni_/_ta_ws` decreases the odds of default by a factor of 0.48.
+
+A 1 unit increase in `tl_/_ta_ws` increases the odds of default by a factor of 4.27.
+
+```{r}
+exp(cbind(odds_ratio = coef(model_manual), confint.default(model_manual)))
+```
+
+We show the Wald confidence interval:
+
+```{r}
+confint.default(model_manual)
+```
+
+And the profiled confidence interval:
+
+```{r}
+confint(model_manual)
+```
+
+We perform likelihood ratio test for `ni_/_ta_ws` and `tl_/_ta_ws` (vs manual_model) and conclude that the two variables are statistically significant within the manual model:
+
+```{r}
+# manual_selection_wo_ni <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` +
+                                # `mv_/_ta_ws`  + `nsale_/_ta_ws` + `opex_/_ta_ws` +
+                                # `re_/_ta_ws`  + `tcl_/_ta_ws` + `tl_/_ta_ws`  + `trec_/_ta_ws`"
+
+# manual_selection_wo_tl <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + 
+                                 # `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` +
+                                 # `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws`  + `trec_/_ta_ws`"
+
+
+manual_selection_wo_ni <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + `mv_/_ta_ws`  + `nsale_/_ta_ws` + `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + `tl_/_ta_ws`  + `trec_/_ta_ws`"
+
+manual_selection_wo_tl <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` + `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws`  + `trec_/_ta_ws`"
+
+model_manual_wo_ni  <- glm(as.formula(manual_selection_wo_ni), data=default_exam %>%
+                    filter(!company_id %in% outliers_ebit) %>%
+                    select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`), family="binomial")
+
+model_manual_wo_tl  <- glm(as.formula(manual_selection_wo_tl), data=default_exam %>%
+                    filter(!company_id %in% outliers_ebit) %>%
+                    select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`), family="binomial")
+
+```
+
+Testing variable `ni_/_ta_ws`:
+
+```{r}
+anova(model_manual_wo_ni, model_manual, test ="LRT")
+```
+Testing variable `tl_/_ta_ws`:
+
+```{r}
+anova(model_manual_wo_tl, model_manual, test ="LRT")
+```
+
+       
+Inference for lasso is not straightforward see for example these references [here](https://stats.stackexchange.com/questions/291409/inference-after-using-lasso-for-variable-selection), [here]( https://projecteuclid.org/journals/annals-of-statistics/volume-44/issue-3/Exact-post-selection-inference-with-application-to-the-lasso/10.1214/15-AOS1371.full) and [here](https://cran.r-project.org/web/packages/selectiveInference/) for a R package
+
+
+
+We compare using the likelihood ratio test a full model (**full_model** using all the variables you retained in the Data Exploration part)
+
+```{r}
+anova(model_manual, model_full, test = "LRT")
+```
+
+which is equivalent to the following command:
+
+```{r, warning=FALSE}
+car::Anova(model_full, type=3, test.statistic = "LR")
+```
+
+Keeping all the variables (full model vs simpler manual model removing 5 variables/df) do not make the model significantly more accurate using the likelihood ratio test:
+
+```{r}
+full_LL <- logLik(model_full)
+manual_LL <- logLik(model_manual)
+
+(LRT <- -2 * (as.numeric(manual_LL)-as.numeric(full_LL)))
+(p_val <- pchisq(LRT, df = 5, lower.tail = FALSE))
+```
+
+Although it is generally not recommended by practitioners and theoreticians, the Hosmer & Lemeshow test (see [here](https://en.wikipedia.org/wiki/Hosmer–Lemeshow_test) or [here](https://stats.stackexchange.com/questions/169438/evaluating-logistic-regression-and-interpretation-of-hosmer-lemeshow-goodness-of)) allows to quickly asses the "goodness of fit" of a Logistic Regression. But more than the test in itself, the underlying motivation is interesting: the Logistic regression model provides an estimate of the probability of an outcome (success/failure, here the default is success or 1). It is desirable that the estimated probability of this outcome is close to the true probability. A first step is to order the predicted probabilities of the outcome and divide it into Q groups (usually using deciles, Q=10).
+
+Then the average predicted probability for each group is computed and compared to the observed probability.
+
+The Hosmer & Lemeshow test uses the predicted vs observed per group to compute a statistic and compare it to a $\chi_{Q-2}^2$ distribution. The test is dependent on the choice of Q and the binning performed on probabilities and is sometimes considered unreliable.
+
+As an alternative, it is usual to assess or diagnose the good calibration of the model using Calibration Plots or Probability Calibration Curves (see here for a [recent R package from the Tidyverse ecosystem](https://www.tidyverse.org/blog/2022/11/model-calibration/) and here for a [scikit-learn version](https://scikit-learn.org/stable/auto_examples/calibration/plot_calibration_curve.html)): they are used to visualize if predictions are consistent with the observed event rates (be it on the training set or a testing set, which is better). For example considering all the training data, and the manually selected model we have:
+
+```{r}
+check_default_prob <- as_tibble(cbind(fitted=model_manual$fitted.values,
+                                      Y= default_exam %>%
+                                        filter(!company_id %in% outliers_ebit) %>% pull(Y)))
+(calibration_data <- check_default_prob %>%
+  mutate(bins_prob = cut(fitted, breaks = quantile(fitted,seq(0,1,0.10)), include.lowest = TRUE)) %>%
+  group_by(bins_prob) %>%
+  summarize(n = n(),
+            def = sum(Y),
+            no_def = n - def,  
+            predict_prob = mean(fitted),
+            real_prob = def/n,
+            forecast_acc = def / sum(check_default_prob$Y)))
+
+ggplot(calibration_data, aes(x = predict_prob, y = real_prob)) +
+  geom_point() +
+  geom_abline()
+
+```
+
+The manually selected model tends to slightly overestimate the default rate for the 8 first deciles, then underestimate the last two deciles.
+
+
+## Second step (10% total points)
+
+### TO DO
+
+In a **second step**, you will need to split the data set using the hold-out approach into a training and testing set.
+
+Explain carefully how you will split the data set given its specific nature (temporal/time series aspect).
+
+Do not use stratified sampling.
+
+Once the split is done, assess using the testing set the two models predictions (**your_model** vs **full_model**) using a ROC curve / AUC approach as seen in the course.
+
+As a fallback (if you cannot plot the ROC or compute the AUC) you can provide a confusion matrix as defined in course and use any metric of your choice to compare models (Accuracy, F1-score,... more details at this [Wikipedia page](https://en.wikipedia.org/wiki/Confusion_matrix)).
+
+Note that usually the first and second step are performed together and the "valid" model is chosen as the result of the second step.
+
+**If for some reason, you encounter issues (to slow, memory errors) to run your analysis using the full dataset, you may restrict to the first 1000 companies (company_id 1 to 1000) for the in-class analysis.** Then at home expand to either all companies or the maximum you can run on your computer.
+
+### Proposed solution
+
+Due to the temporal aspect of the data set, we cannot split randomly the data set into training and testing set. Usually when dealing with time series a chronological or time-series split is preferred (see for example [here](https://stats.stackexchange.com/questions/346907/splitting-time-series-data-into-train-test-validation-sets)).
+
+We choose here to train on dates up to 2011 (included) and test on dates after 2011
+
+```{r}
+train <- default_exam %>%
+          filter(!company_id %in% outliers_ebit, fiscal_year<=2011) 
+
+test <- default_exam %>%
+          filter(!company_id %in% outliers_ebit, fiscal_year>2011) 
+```
+
+In complete rigor, we should re-winsorize data using only the training set, then apply (or not) winsorization to testing data using quantiles from training set. Otherwise we are learning some of the testing set when winsorizing (data leak). 
+
+This is not what we do in the following, assuming without verifying a comparable distribution between training and testing set.
+
+Fitting full model on training set:
+
+```{r}
+model_full_holdout <- glm(Y~., 
+                          data = train %>%
+                            select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                          family="binomial")
+
+summary(model_full_holdout)
+```
+
+Fitting manually selected model on training set:
+
+```{r}
+# manual_selection <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` +
+                          # `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` +
+                          # `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` +
+                          # `tl_/_ta_ws`  + `trec_/_ta_ws`"
+
+manual_selection <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` + `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + `tl_/_ta_ws`  + `trec_/_ta_ws`"
+
+model_manual_holdout <- glm(as.formula(manual_selection), 
+                          data = train %>%
+                            select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                          family="binomial")
+summary(model_manual_holdout)
+```
+
+```{r}
+# plot ROC / compute AUC for the training set
+pred_full_train <- ROCR::prediction(model_full_holdout$fitted.values,
+                                    train$Y)
+
+perf_full_train <- ROCR::performance(pred_full_train, measure = "tpr", x.measure = "fpr")
+plot(perf_full_train, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "darkorange")
+abline(0, 1) #add a 45 degree line
+
+auc_full_train <- ROCR::performance(pred_full_train, measure = "auc")
+auc_full_train <- auc_full_train@y.values[[1]]
+auc_full_train 
+```
+
+```{r}
+# plot ROC / compute AUC for the testing set
+
+predicted_prob_full_test <- predict(model_full_holdout, newdata=test, type="response")
+
+pred_full_test <- ROCR::prediction(predicted_prob_full_test,
+                                    test$Y)
+
+perf_full_test <- ROCR::performance(pred_full_test, measure = "tpr", x.measure = "fpr")
+plot(perf_full_test, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "darkorange")
+abline(0, 1) #add a 45 degree line
+
+auc_full_test <- ROCR::performance(pred_full_test, measure = "auc")
+auc_full_test <- auc_full_test@y.values[[1]]
+auc_full_test 
+```
+
+The AUC stands at ca. 87.65% on the testing set for the full model.
+
+```{r}
+# plot ROC / compute AUC for the testing set
+
+predicted_prob_manual_test <- predict(model_manual_holdout, newdata=test, type="response")
+
+pred_manual_test <- ROCR::prediction(predicted_prob_manual_test,
+                                    test$Y)
+
+perf_manual_test <- ROCR::performance(pred_manual_test, measure = "tpr", x.measure = "fpr")
+plot(perf_manual_test, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "darkolivegreen")
+abline(0, 1) #add a 45 degree line
+
+auc_manual_test <- ROCR::performance(pred_manual_test, measure = "auc")
+auc_manual_test <- auc_manual_test@y.values[[1]]
+auc_manual_test 
+```
+
+The AUC stands at ca. 87.94% on the testing set for the manually selected model.
+
+We also provide calibration plots to quickly asses the goodness of fit of the model:
+
+```{r}
+check_default_prob_manual_train <- as_tibble(cbind(fitted=model_manual_holdout$fitted.values,
+                                      Y= train$Y))
+(calibration_data_manual_train <- check_default_prob_manual_train %>%
+  mutate(bins_prob = cut(fitted, 
+                         breaks = quantile(fitted,seq(0,1,0.10)),
+                         include.lowest = TRUE)) %>%
+  group_by(bins_prob) %>%
+  summarize(n = n(),
+            def = sum(Y),
+            no_def = n - def,  
+            predict_prob = mean(fitted),
+            real_prob = def/n,
+            forecast_acc = def / sum(check_default_prob_manual_train$Y)))
+
+ggplot(calibration_data_manual_train, aes(x = predict_prob, y = real_prob)) +
+  geom_point() +
+  geom_abline()
+
+```
+
+```{r}
+check_default_prob_manual_test <- as_tibble(cbind(fitted=predicted_prob_manual_test,
+                                      Y= test$Y))
+(calibration_data_manual_test <- check_default_prob_manual_test %>%
+  mutate(bins_prob = cut(fitted,
+                         breaks = quantile(fitted,seq(0,1,0.10)),
+                         include.lowest = TRUE)) %>%
+  group_by(bins_prob) %>%
+  summarize(n = n(),
+            def = sum(Y),
+            no_def = n - def,  
+            predict_prob = mean(fitted),
+            real_prob = def/n,
+            forecast_acc = def / sum(check_default_prob_manual_test$Y)))
+
+ggplot(calibration_data_manual_test, aes(x = predict_prob, y = real_prob)) +
+  geom_point() +
+  geom_abline()
+
+```
+
+## Third step (5% total points)
+
+### TO DO at-home (\~30 minutes)
+
+Complete the **first step** variable selection using two unused approaches of your choice. See the effect on **second step**.
+
+When finishing this step you will have 3 models at hand (**your_models**), to keep for take-home part of the exam.
+
+### Proposed solution
+
+#### Backward BIC
+
+Fitting stepwise backward model using BIC criterion on training set:
+
+```{r}
+model_full_train_holdout <- glm(Y~., data=train %>%
+                    select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                    family="binomial")
+
+intercept_only_train_holdout <- glm(Y~1, data=train %>%
+                    select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                    family="binomial")
+```
+
+```{r}
+forward_aic_holdout <- step(intercept_only_train_holdout,
+                    direction='forward',
+                    test = 'LRT',
+                    scope=formula(model_full_train_holdout),
+                    k=2,
+                    trace = FALSE)
+summary(forward_aic_holdout)
+```
+
+```{r}
+forward_bic_holdout <- step(intercept_only_train_holdout,
+                    direction='forward',
+                    test = 'LRT',
+                    scope=formula(model_full_train_holdout),
+                    k=log(nrow(train)),
+                    trace = FALSE)
+summary(forward_bic_holdout)
+```
+
+```{r}
+backward_bic_holdout <- step(model_full_train_holdout,
+                 direction='backward',
+                 test = 'LRT',
+                 scope=formula(model_full_train_holdout),
+                 k=log(nrow(train)),
+                 trace = FALSE)
+summary(backward_bic_holdout)
+```
+
+Forward and Backward stepwise selection using the BIC criterion using the full data set agree on the choice of variables.
+
+```{r}
+# plot ROC / compute AUC for the testing set
+
+predicted_prob_back_bic_test <- predict(backward_bic_holdout, newdata=test, type="response")
+
+pred_back_bic_test <- ROCR::prediction(predicted_prob_back_bic_test,
+                                    test$Y)
+
+perf_back_bic_test <- ROCR::performance(pred_back_bic_test, measure = "tpr", x.measure = "fpr")
+plot(perf_back_bic_test, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "plum4")
+abline(0, 1) #add a 45 degree line
+
+auc_back_bic_test <- ROCR::performance(pred_back_bic_test, measure = "auc")
+auc_back_bic_test <- auc_back_bic_test@y.values[[1]]
+auc_back_bic_test 
+```
+
+The AUC stands at ca. 87.52% on the testing set for the stagewise selected (backward BIC) model.
+
+#### Lasso
+
+```{r}
+set.seed(1)
+model_lasso_holdout <- glmnetUtils::cv.glmnet(Y ~ .,
+                            data=train %>% 
+                              select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                            family="binomial",
+                            alpha=1,
+                            standardize = TRUE,
+                            type.measure = "auc")
+```
+
+```{r}
+lasso_holdout_coeffs_1se <- coef(model_lasso_holdout, s = "lambda.1se")
+tibble(name = lasso_holdout_coeffs_1se@Dimnames[[1]][lasso_holdout_coeffs_1se@i + 1],
+       coefficient = lasso_holdout_coeffs_1se@x)
+```
+
+```{r}
+lasso_holdout_coeffs_min <- coef(model_lasso_holdout, s = "lambda.min")
+tibble(name = lasso_holdout_coeffs_min@Dimnames[[1]][lasso_holdout_coeffs_min@i + 1],
+       coefficient = lasso_holdout_coeffs_min@x)
+```
+
+```{r}
+# plot ROC / compute AUC for the testing set
+
+predicted_prob_lasso_test <- as.vector(predict(model_lasso_holdout, newdata=test, type="response"))
+
+pred_lasso_test <- ROCR::prediction(predicted_prob_lasso_test,
+                                    test$Y)
+
+perf_lasso_test <- ROCR::performance(pred_lasso_test, measure = "tpr", x.measure = "fpr")
+plot(perf_lasso_test, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "dodgerblue")
+abline(0, 1) #add a 45 degree line
+
+auc_lasso_test <- ROCR::performance(pred_lasso_test, measure = "auc")
+auc_lasso_test <- auc_lasso_test@y.values[[1]]
+auc_lasso_test 
+```
+
+The AUC stands at ca. 86.77% on the testing set for the lasso model (using penalization parameter lambda.1se).
+
+#### ROC curves
+
+We display the four models ROC curves:
+
+```{r}
+plot(perf_full_test, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "darkorange")
+plot(perf_manual_test, add = TRUE, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "darkolivegreen")
+plot(perf_back_bic_test, add = TRUE, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "plum4")
+plot(perf_lasso_test, add = TRUE, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "dodgerblue")
+abline(0, 1) #add a 45 degree line
+legend(0.6,0.6,
+       c('full', 'manual', 'backward bic', 'lasso'),
+       col=c("darkorange", "darkolivegreen", "plum4", "dodgerblue"),lwd=3)
+```
+
+# Model improvement and prediction using a validation set
+
+**TO DO at-home (\~3-4 hours)**
+
+## Feature engineering
+
+### TO DO
+
+In this part, you will try to improve the model devised in last part (**your_improved_model**):
+
+-   it may involve improving variable selection, creating or transforming variables,
+
+-   you may, if relevant, consider potential non-linearities or interactions in features (for example using: polynomial expansion or `splines` to transform variables or by binning some variables into qualitative variables, as seen in class for the mixture data set),
+
+-   given the time series / temporal aspect you might also enrich the data set with any relevant macroeconomic indicator of your choice, remembering that the companies are public companies listed in the US. For this you can use for example the [FRED website](https://fred.stlouisfed.org/categories) providing financial and macroeconomic time series. Be cautious not to use time series data that would be more current than the observations, use appropriate lag to avoid this pitfall,
+
+-   you can also try to deal with response variable imbalance (there are more healthy companies than defaulting in the data set) by sampling differently your training set (for example undersampling the healthy cases).
+
+In this part you need to implement three different improvements to get full score (i.e. three models). You may combine these improvements in a fourth model.
+
+Explain or motivate briefly your choices and assumptions.
+
+Note that you might find that **your_improved_models** do not improve predictions using your metric. It happens in real life, what is important is the approach you follow.
+
+### Proposed solution
+
+#### Altman/Ohlson
+
+We use here predictors used by two classical bankruptcy prediction models first [Altman's Z-score](https://en.wikipedia.org/wiki/Altman_Z-score) [@altman1968] then [Ohlson's O-score](https://en.wikipedia.org/wiki/Ohlson_O-score) [@ohlson1980].
+
+```{r}
+default_exam_classic <- default_exam %>% 
+                         mutate(wc=current_asset-tcl,
+                                wcta = wc / ta, # Altman's 5 ratios
+                                reta = re / ta,
+                                ebta = ebit / ta,
+                                mvtl = mv / tl,
+                                salta = nsale / ta,
+                                tlta = tl / ta, # Completing with Ohlson's
+                                clca = tcl / current_asset,
+                                oeneg = as.factor(if_else(tcl > ta, 1, 0)),
+                                nita = ni / ta,
+                                futl = ebit / tl)
+
+default_exam_classic <- default_exam_classic %>%
+                          group_by(company_id) %>%
+                          arrange(company_id, fiscal_year) %>%
+                          mutate(ni_1 = lag(ni), 
+                                 chin = (ni - ni_1)/(abs(ni) + abs(ni_1))) %>% 
+                          ungroup()
+
+```
+
+
+
+
+![](images/altman_zscore.png)
+
+```{r}
+altman_var <- "Y ~ wcta + reta + ebta + mvtl + salta"
+
+model_altman <- glm(as.formula(altman_var),
+                         data=default_exam_classic %>%
+                          filter(!company_id %in% outliers_ebit),
+                         family="binomial")
+summary(model_altman)
+```
+
+
+![](images/ohlson_1.png)
+
+![](images/ohlson_2.png)
+
+```{r}
+ohlson_var <- "Y ~ log(ta) + tlta + wcta + clca + oeneg + nita + futl + chin"
+
+model_ohlson <- glm(as.formula(ohlson_var),
+                         data=default_exam_classic %>%
+                          filter(!company_id %in% outliers_ebit),
+                         family="binomial")
+summary(model_ohlson)
+```
+
+```{r}
+altman_ohlson_var <- "Y ~ log(ta) + wcta + reta + ebta + mvtl + salta + tlta + clca + oeneg + nita + futl + chin"
+
+model_altman_ohlson <- glm(as.formula(altman_ohlson_var),
+                         data=default_exam_classic %>%
+                          filter(!company_id %in% outliers_ebit),
+                         family="binomial")
+summary(model_altman_ohlson)
+```
+
+```{r}
+model_altman_ws <- glm(as.formula(altman_var),
+                    data=default_exam_classic %>%
+                      filter(!company_id %in% outliers_ebit) %>% 
+                      mutate(across(.cols = wc:clca,
+                                    .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95)))) %>% 
+                      mutate(across(.cols = nita:futl,
+                                    .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95)))),
+                   family="binomial")
+summary(model_altman_ws)
+```
+
+```{r}
+model_ohlson_ws <- glm(as.formula(ohlson_var),
+                    data=default_exam_classic %>%
+                      filter(!company_id %in% outliers_ebit) %>% 
+                      mutate(across(.cols = wc:clca,
+                                    .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95)))) %>% 
+                      mutate(across(.cols = nita:futl,
+                                    .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95)))),
+                   family="binomial")
+summary(model_ohlson_ws)
+```
+
+
+```{r}
+altman_ohlson_var <- "Y ~ log(ta) + wcta + reta + ebta + mvtl + salta + tlta + clca + oeneg + nita + futl + chin"
+
+model_altman_ohlson_ws <- glm(as.formula(altman_ohlson_var),
+                    data=default_exam_classic %>%
+                      filter(!company_id %in% outliers_ebit) %>% 
+                      mutate(across(.cols = wc:clca,
+                                    .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95)))) %>% 
+                      mutate(across(.cols = nita:futl,
+                                    .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95)))),
+                   family="binomial")
+summary(model_altman_ohlson_ws)
+
+```
+
+```{r}
+altman_ohlson_manual_var <- "Y ~ reta + mvtl + salta + tlta + clca + oeneg + nita + futl + chin"
+
+model_altman_ohlson_manual_ws <- glm(as.formula(altman_ohlson_manual_var),
+                data=default_exam_classic %>%
+                  filter(!company_id %in% outliers_ebit) %>% 
+                  mutate(across(.cols = wc:clca,
+                                .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95)))) %>% 
+                  mutate(across(.cols = nita:futl,
+                                .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95)))),
+               family="binomial")
+summary(model_altman_ohlson_manual_ws)
+
+```
+
+#### FRED
+
+We take inspiration from this FRED blog post (<https://fredblog.stlouisfed.org/2014/05/dating-the-financial-crisis-using-fixed-income-markets-yields-spreads/>) using in particular the spread between Moody's seasoned Aaa corporate bond yield and Moody's seasoned Baa corporate bond yield to "date" the Great Financial Crisis. Significant breaks in the dynamics of yield spreads from U.S. fixed income markets are supposed to be indicator of a crisis and can be used to predict future rise in defaults.
+
+```{r}
+url_AAA <- "https://fred.stlouisfed.org/series/AAA/downloaddata/AAA.csv"
+series_AAA <- read_csv(url_AAA) %>% 
+                rename(AAA = VALUE)
+
+url_BAA <- "https://fred.stlouisfed.org/series/BAA/downloaddata/BAA.csv"
+series_BAA <- read_csv(url_BAA) %>% 
+                rename(BAA = VALUE)
+```
+
+```{r}
+spread_corporate <- series_AAA %>%
+                      left_join(series_BAA, by = c("DATE")) %>% 
+                      mutate(spread_BAA_AAA = BAA - AAA,
+                             spread_BAA_AAA_min1 = lag(spread_BAA_AAA,n=6),
+                             perf_BAA_AAA = spread_BAA_AAA / spread_BAA_AAA_min1-1,
+                             year = lubridate::year(DATE))
+
+ggplot(spread_corporate, aes(x=DATE, y=spread_BAA_AAA)) + geom_line()
+
+```
+
+```{r}
+spread_corporate_yearly <- spread_corporate %>% 
+                              group_by(year) %>% 
+                              summarise(spread_BAA_AAA=mean(spread_BAA_AAA),
+                                        perf_BAA_AAA_avg=mean(perf_BAA_AAA)) %>% 
+                              mutate(year_1 = year + 1,
+                                     year_2 = year + 2)
+
+ggplot(spread_corporate_yearly %>% 
+         filter(year>=1999), aes(x=year, y=spread_BAA_AAA)) + geom_line()
+
+ggplot(spread_corporate_yearly %>% 
+         filter(year>=1999), aes(x=year, y=perf_BAA_AAA_avg)) + geom_line()
+
+```
+
+```{r}
+# manual_selection_FRED <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` +
+                               # `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` +
+                               # `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + 
+                               # `tl_/_ta_ws`  + `trec_/_ta_ws` + spread_BAA_AAA"
+
+manual_selection_FRED <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` + `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + `tl_/_ta_ws`  + `trec_/_ta_ws` + spread_BAA_AAA"
+
+model_manual_FRED <- glm(as.formula(manual_selection_FRED),
+                 data=default_exam %>%
+                    left_join(spread_corporate_yearly, by = c("fiscal_year"="year_2")) %>% 
+                    filter(!company_id %in% outliers_ebit) %>%
+                    select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, spread_BAA_AAA, -`ta_/_ta_ws`),
+                 family="binomial")
+
+summary(model_manual_FRED)
+```
+
+#### Downsampling
+
+We now test down-sampling the healthy cases in the training set.
+
+```{r}
+train <- default_exam %>%
+          filter(!company_id %in% outliers_ebit, fiscal_year<=2011) 
+
+test <- default_exam %>%
+          filter(!company_id %in% outliers_ebit, fiscal_year>2011) 
+```
+
+For that we randomly select 25% of healthy companies in training set:
+
+```{r}
+company_ids <- unique((train  %>% filter(default_will_occur == 0))$company_id)
+set.seed(1987)
+downsampled_default_exam_train <- train  %>%
+  filter(company_id %in% sample(company_ids,floor(0.25*length(company_ids))))
+
+downsampled_default_exam_train <- bind_rows(downsampled_default_exam_train,
+                                            train %>% filter(default_will_occur == 1))
+
+```
+
+We artificially augment the default rate in the training set:
+
+```{r}
+downsampled_default_exam_train %>%
+  group_by(fiscal_year) %>%
+  summarise(total_firm = n_distinct(company_id),
+            default = sum(default),
+            pct_default = default / total_firm)
+```
+
+```{r}
+manual_selection <- "Y ~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` + `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + `tl_/_ta_ws`  + `trec_/_ta_ws`"
+
+model_manual_DS <- glm(as.formula(manual_selection), 
+                       data=downsampled_default_exam_train %>%
+                          filter(!company_id %in% outliers_ebit) %>%
+                          select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`), family="binomial")
+
+summary(model_manual_DS)
+```
+
+We do not modify the testing set (keeping the default distribution unchanged):
+
+```{r}
+# plot ROC / compute AUC for the testing set
+predicted_prob_manual_DS_test <- predict(model_manual_DS, newdata=test, type="response")
+
+pred_manual_DS_test <- ROCR::prediction(predicted_prob_manual_DS_test,
+                                        test$Y)
+
+perf_manual_DS_test <- ROCR::performance(pred_manual_DS_test, measure = "tpr", x.measure = "fpr")
+plot(perf_manual_DS_test, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "brown4")
+abline(0, 1) #add a 45 degree line
+
+auc_manual_DS_test <- ROCR::performance(pred_manual_DS_test, measure = "auc")
+auc_manual_DS_test <- auc_manual_DS_test@y.values[[1]]
+auc_manual_DS_test 
+```
+The AUC for the manually selected model is slightly better on the testing set when down-sampling.
+```{r}
+plot(perf_full_test, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "darkorange")
+plot(perf_manual_test, add = TRUE, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "darkolivegreen")
+plot(perf_manual_DS_test, add = TRUE, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "brown4")
+abline(0, 1) #add a 45 degree line
+legend(0.6,0.6,
+       c('full', 'manual', 'manual_downsampled'),
+       col=c("darkorange", "darkolivegreen", "brown4"),lwd=3)
+```
+
+## Resampling validation
+
+### TO DO
+
+In this part you have to improve the hold-out approach used in the in-class part.
+
+Explain why classic K-fold Cross-Validation might not be adapted to the data set.
+
+A proposed approach is to implement something similar to the following scheme (also known as walk forward or time series split):
+
+![](assets/moody_temporal_analysis.png)
+
+which is also described here in a less specific way in the [scikit-learn documentation](https://scikit-learn.org/stable/modules/cross_validation.html), see below:
+
+![](assets/time_series_split_scikit.png) You may adapt a little bit the length of the splits to your needs, and also your training set window may be either "fixed" (i.e. you keep all past data in training set) or "rolling" (i.e. with a fixed length or time period).
+
+For each split, assess your models on the testing sets by computing the AUC.
+
+Store the results in a data structure of your choice (dataframe, tibble, list) similarly to what has been shown in class (in the exercise at the very end of the second lesson 'Implement k-fold cross validation (using AUC as metric) manually'). Save the results to a `.rds` file especially if the code is long to run.
+
+If you cannot implement a multiple split approach, use the simple hold-out approach for the next section. Nonetheless you can earn some points trying to implement something and detailing what you intended to achieve.
+
+Once you have constructed your improved models, and your resampling method, you will need to make predictions on the validation set(s) and choose a best model within both **your_models** (**your_best_model**) and **your_improved_models** (**your_best_improved_model**).
+
+### Proposed solution
+
+Similarly as before for the hold-out approach, due to the time series nature of the data, we cannot perform the usual K-Fold cross validation randomly sampling K folds/blocks.
+
+We implement a walk forward split. Starting with a 5-year long training set (2000-2004) and using the next-year (2005) as a testing set. We increase sequentially the training set by 1-year and keep predicting the next year.
+
+```{r}
+# Adding Altman/Ohlson variables
+default_exam_split <- default_exam %>%
+   mutate(wc=current_asset-tcl,
+          wcta = wc / ta, # Altman's 5 ratios
+          reta = re / ta,
+          ebta = ebit / ta,
+          mvtl = mv / tl,
+          salta = nsale / ta,
+          tlta = tl / ta, # Completing with Ohlson's
+          clca = tcl / current_asset,
+          oeneg = as.factor(if_else(tcl > ta, 1, 0)),
+          nita = ni / ta,
+          futl = ebit / tl)
+
+default_exam_split  <- default_exam_split  %>%
+          group_by(company_id) %>%
+          arrange(company_id, fiscal_year) %>%
+          mutate(ni_1 = lag(ni), 
+                 chin = (ni - ni_1)/(abs(ni) + abs(ni_1))) %>% 
+          ungroup() %>% 
+          mutate(across(.cols = wc:clca,
+                            .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95)))) %>% 
+          mutate(across(.cols = nita:futl,
+                            .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95))))
+
+# Adding the FRED Baa - Aaa spread
+default_exam_split <- default_exam_split %>% 
+  left_join(spread_corporate_yearly, by = c("fiscal_year"="year_2"))
+```
+
+```{r}
+     auc <- function(X,Y){
+            pred <- ROCR::prediction(X, Y)
+            auc <- ROCR::performance(pred, measure = "auc")
+            auc <- auc@y.values[[1]]
+     }
+```
+
+
+```{r, cache=TRUE}
+
+pred_list <- list()
+auc_list <- list()
+i <- 1
+for(split_year in 2005:2014) {
+  print(split_year)
+  train <- default_exam_split %>%
+          filter(!company_id %in% outliers_ebit, fiscal_year < split_year) 
+
+  test <- default_exam_split %>%
+          filter(!company_id %in% outliers_ebit, fiscal_year == split_year) 
+  
+  test_altman <- test %>% filter(!is.na(chin))
+ 
+  # fitting models on training set / predicting probabilities on testing set
+  
+  # full
+  model_full_ts_split <- glm(Y~., data=train %>%
+                                    select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                                  family="binomial")
+  predicted_prob_full_ts_split <- predict(model_full_ts_split,
+                                          newdata=test, type="response")
+  auc_full_ts_split <- auc(predicted_prob_full_ts_split, test$Y)
+  
+  # summary(model_full_ts_split)
+  
+  # manual
+    # manual_selection <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` +
+                              # `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` + 
+                              # `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + 
+                              # `tl_/_ta_ws`  + `trec_/_ta_ws`"
+  
+  manual_selection <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` + `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + `tl_/_ta_ws`  + `trec_/_ta_ws`"
+  
+  model_manual_ts_split <- glm(as.formula(manual_selection), 
+                               data = train %>%
+                                select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                               family="binomial")
+  predicted_prob_manual_ts_split <- predict(model_manual_ts_split,
+                                            newdata=test, type="response")
+  auc_manual_ts_split <- auc(predicted_prob_manual_ts_split, test$Y)
+  
+  # summary(model_manual_ts_split)
+  
+  # backward_bic
+  backward_bic_ts_split <- step(model_full_ts_split,
+                 direction='backward',
+                 test = 'LRT',
+                 scope=formula(model_full_ts_split),
+                 k=log(nrow(train)),
+                 trace = FALSE)
+  predicted_prob_back_bic_ts_split <- predict( backward_bic_ts_split,
+                                               newdata=test, type="response")
+  auc_back_bic_ts_split <- auc(predicted_prob_back_bic_ts_split, test$Y)
+  
+  # summary(backward_bic_ts_split)
+
+  # lasso
+  set.seed(1)
+  model_lasso_ts_split <- glmnetUtils::cv.glmnet(Y ~ .,
+                            data=train %>% 
+                              select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                            family="binomial",
+                            alpha=1,
+                            standardize = TRUE,
+                            type.measure = "auc")
+  predicted_prob_lasso_ts_split <- as.vector(predict(model_lasso_ts_split,
+                                                     newdata=test, type="response"))
+  auc_lasso_ts_split <- auc(predicted_prob_lasso_ts_split, test$Y)
+  
+  # lasso_ts_split_coeffs_1se <- coef(model_lasso_ts_split, s = "lambda.1se")
+  # tibble(name = lasso_ts_split_coeffs_1se@Dimnames[[1]][lasso_ts_split_coeffs_1se@i + 1],
+  #        coefficient = lasso_ts_split_coeffs_1se@x)
+  
+  
+  # altman/ohlson
+  altman_ohlson_var <- "Y ~ reta + mvtl + salta + tlta + clca + oeneg + nita + futl + chin"
+
+  model_altman_ohlson_ts_split <- glm(as.formula(altman_ohlson_var),
+                              data=train,
+                             family="binomial")
+  
+  predicted_prob_altman_ohlson_ts_split <- predict( model_altman_ohlson_ts_split,
+                                                    newdata= test_altman,
+                                                    type="response")
+  auc_altman_ohlson_ts_split <- auc(predicted_prob_altman_ohlson_ts_split, test_altman$Y)
+  
+  # summary( model_altman_ohlson_ts_split)
+  
+  # FRED
+    # manual_selection_FRED <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` +
+                                   # `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` +
+                                   # `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` +
+                                   # `tl_/_ta_ws`  + `trec_/_ta_ws` + spread_BAA_AAA"
+                                   
+    
+  manual_selection_FRED <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` + `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + `tl_/_ta_ws`  + `trec_/_ta_ws` + spread_BAA_AAA"
+  
+  model_FRED_ts_split <- glm(as.formula(manual_selection_FRED), data=train, family="binomial")
+  
+  predicted_prob_FRED_ts_split <- predict( model_FRED_ts_split,
+                                                    newdata= test,
+                                                    type="response")
+  auc_FRED_ts_split <- auc(predicted_prob_FRED_ts_split, test$Y)
+  
+  # summary(model_FRED_ts_split)
+  
+  # downsample
+  company_ids <- unique((train %>% filter(default_will_occur == 0))$company_id)
+  set.seed(1987)
+  downsampled_default_exam_train <- train  %>%
+    filter(company_id %in% sample(company_ids,floor(0.25*length(company_ids))))
+  
+  downsampled_default_exam_train <- bind_rows(downsampled_default_exam_train,
+                                              train %>% filter(default_will_occur == 1))
+  
+    # manual_selection <- "Y ~ `current_asset_/_ta_ws` + `invt_/_ta_ws` +
+                                # `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` +
+                                # `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` +
+                                # `tl_/_ta_ws`  + `trec_/_ta_ws`"
+    
+  manual_selection <- "Y ~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` + `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + `tl_/_ta_ws`  + `trec_/_ta_ws`"
+
+   model_manual_DS_ts_split <- glm(as.formula(manual_selection), 
+                                   data=downsampled_default_exam_train %>%
+                                     filter(!company_id %in% outliers_ebit) %>%
+                                     select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                                   family="binomial")
+   
+   predicted_prob_manual_DS_ts_split <- predict( model_manual_DS_ts_split,
+                                                      newdata= test,
+                                                      type="response")
+   auc_manual_DS_ts_split <- auc(predicted_prob_manual_DS_ts_split, test$Y)
+   # summary(model_manual_DS_ts_split)
+   
+   # storing results
+   row_prob <- tibble_row(year = split_year,
+                                         full = list(predicted_prob_full_ts_split),
+                                         manual = list(predicted_prob_manual_ts_split),
+                                         back_bic = list(predicted_prob_back_bic_ts_split),
+                                         lasso = list(predicted_prob_lasso_ts_split),
+                                         altman = list(predicted_prob_altman_ohlson_ts_split),
+                                         fred = list(predicted_prob_FRED_ts_split),
+                                         manual_DS = list(predicted_prob_manual_DS_ts_split),
+                                         test_Y = list(test$Y),
+                                         test_Y_altman = list(test_altman$Y)) 
+ 
+  row_auc <- tibble_row(year = split_year,
+                                       full = auc_full_ts_split,
+                                       manual = auc_manual_ts_split,
+                                       back_bic = auc_back_bic_ts_split,
+                                       lasso = auc_lasso_ts_split,
+                                       altman = auc_altman_ohlson_ts_split,
+                                       fred = auc_FRED_ts_split,
+                                       manual_DS = auc_manual_DS_ts_split)
+ 
+ pred_list[[i]] <- row_prob
+ auc_list[[i]] <- row_auc
+ i <- i + 1
+  
+}
+```
+
+```{r}
+pred_ts_split <- bind_rows(pred_list)
+auc_ts_split <- bind_rows(auc_list) %>%
+        mutate(year = as.character(year)) %>% 
+        add_row(year = "Total", summarise(., across(where(is.numeric), mean)))
+```
+
+```{r}
+# saveRDS(pred_ts_split,"pred_ts_split.rds")
+# saveRDS(auc_ts_split,"auc_ts_split.rds")
+```
+
+```{r}
+pred_ts_split <- readRDS("pred_ts_split.rds")
+auc_ts_split <- readRDS("auc_ts_split.rds")
+```
+
+```{r}
+auc_ts_split 
+```
+
+
+```{r}
+auc_ts_split[11,7] %>% pull(fred)
+auc_ts_split[11,8] %>% pull(manual_DS)
+```
+
+## Prediction on validation test / final model selection
+
+### TO DO
+
+At the end of the exam I have released a validation test (file `default_dataset_validation.csv`):
+
+```{r}
+# # Uncomment to read the validation set, 
+# # ensuring the file default_dataset_validation.csv is in the data folder
+default_dataset_validation <- read_csv('data/default_dataset_validation.csv')
+```
+
+Once you have selected your best models, you will conclude by making predictions on this validation set and choosing a final model (**final_model**) within (**full_model**, **your_best_model**, **your_best_improved_model**).
+
+### Proposed solution
+
+```{r}
+# # Uncomment to read the validation set, 
+# # ensuring the file default_dataset_validation.csv is in the data folder
+default_exam_validation <- default_dataset_validation %>%
+  select(-ebitda,-tr,- fiscal_year_default) %>% 
+  mutate(Y = default,
+         Y_alt = default_will_occur) %>% 
+    # scaling by `ta`
+  mutate(across(.cols = cogs:trec,
+                .fns = ~ . / ta,
+                .names = "{.col}_/_ta")) %>% 
+  # scaling by `ta` and winsorizing
+  mutate(across(.cols = cogs:trec,
+                .fns = ~ DescTools::Winsorize(. / ta, probs = c(0.05, 0.95)),
+                .names = "{.col}_/_ta_ws"))
+```
+
+```{r}
+outliers_ebit_validation <- default_exam_validation %>%
+  filter(`ebit_/_ta` < -10, default_will_occur == 0) %>%
+  distinct(company_id) %>%
+  pull(company_id)
+```
+
+```{r}
+# Adding Altman/Ohlson variables
+default_exam_validation <- default_exam_validation %>%
+   mutate(wc=current_asset-tcl,
+          wcta = wc / ta, # Altman's 5 ratios
+          reta = re / ta,
+          ebta = ebit / ta,
+          mvtl = mv / tl,
+          salta = nsale / ta,
+          tlta = tl / ta, # Completing with Ohlson's
+          clca = tcl / current_asset,
+          oeneg = as.factor(if_else(tcl > ta, 1, 0)),
+          nita = ni / ta,
+          futl = ebit / tl) %>% 
+  filter(!company_id %in% c(outliers_ebit_validation, outliers_ebit))
+
+
+default_exam_validation  <- default_exam_validation  %>%
+                  group_by(company_id) %>%
+                  arrange(company_id, fiscal_year) %>%
+                  mutate(ni_1 = lag(ni), 
+                         chin = (ni - ni_1)/(abs(ni) + abs(ni_1))) %>% 
+                  ungroup() %>% 
+                  mutate(across(.cols = wc:clca,
+                                    .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95)))) %>% 
+                  mutate(across(.cols = nita:futl,
+                                    .fns = ~ DescTools::Winsorize(., probs = c(0.05, 0.95))))
+
+# Adding the FRED Baa - Aaa spread
+default_exam_validation <- default_exam_validation %>% 
+  left_join(spread_corporate_yearly, by = c("fiscal_year"="year_2"))
+```
+
+We retrain the full model, the manually selected model and the FRED model on 2000-2014 and assess on the validation set:
+
+```{r}
+# full
+model_full_final <- glm(Y~., data=default_exam_split%>%
+                                  select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                                family="binomial")
+predicted_prob_full_final <- predict(model_full_final,
+                                     newdata=default_exam_validation, type="response")
+
+# auc_full_final <- auc(predicted_prob_full_final, default_exam_validation$Y)
+# auc_full_final
+
+pred_full_final <- ROCR::prediction(predicted_prob_full_final,
+                                    default_exam_validation$Y)
+
+perf_full_final <- ROCR::performance(pred_full_final, measure = "tpr", x.measure = "fpr")
+plot(perf_full_final, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "darkorange")
+abline(0, 1) #add a 45 degree line
+
+auc_full_final <- ROCR::performance(pred_full_final, measure = "auc")
+auc_full_final <- auc_full_final@y.values[[1]]
+auc_full_final 
+
+```
+
+```{r}
+# manual
+# manual_selection <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` +
+                           # `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` +
+                           # `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` +
+                           # `tl_/_ta_ws`  + `trec_/_ta_ws`"
+
+manual_selection <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` + `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + `tl_/_ta_ws`  + `trec_/_ta_ws`"
+model_manual_final <- glm(as.formula(manual_selection),
+                         data=default_exam_split%>%
+                                  select(Y, `cogs_/_ta_ws`:`trec_/_ta_ws`, -`ta_/_ta_ws`),
+                                family="binomial")
+
+predicted_prob_manual_final <- predict(model_manual_final,
+                                       newdata=default_exam_validation,
+                                       type="response")
+# auc_manual_final <- auc(predicted_prob_manual_final, default_exam_validation$Y)
+# auc_manual_final
+
+pred_manual_final <- ROCR::prediction(predicted_prob_manual_final,
+                                    default_exam_validation$Y)
+
+perf_manual_final <- ROCR::performance(pred_manual_final, measure = "tpr", x.measure = "fpr")
+plot(perf_manual_final, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "darkolivegreen")
+abline(0, 1) #add a 45 degree line
+
+auc_manual_final <- ROCR::performance(pred_manual_final, measure = "auc")
+auc_manual_final <- auc_manual_final@y.values[[1]]
+auc_manual_final 
+```
+
+```{r}
+# manual_selection_FRED <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + 
+                            # `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` +
+                            # `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` +
+                            # `tl_/_ta_ws`  + `trec_/_ta_ws` + spread_BAA_AAA"
+
+manual_selection_FRED <- "Y~ `current_asset_/_ta_ws` + `invt_/_ta_ws` + `mv_/_ta_ws` + `ni_/_ta_ws` + `nsale_/_ta_ws` + `opex_/_ta_ws` + `re_/_ta_ws`  + `tcl_/_ta_ws` + `tl_/_ta_ws`  + `trec_/_ta_ws` + spread_BAA_AAA"
+
+model_FRED_final <- glm(as.formula(manual_selection_FRED),
+                        data=default_exam_split,
+                        family="binomial")
+
+predicted_prob_FRED_final <- predict(model_FRED_final,
+                                     newdata=default_exam_validation,
+                                     type="response")
+
+# auc_FRED_final <- auc(predicted_prob_FRED_final, default_exam_validation$Y)
+# auc_FRED_final
+
+pred_FRED_final <- ROCR::prediction(predicted_prob_FRED_final,
+                                    default_exam_validation$Y)
+
+perf_FRED_final <- ROCR::performance(pred_FRED_final, measure = "tpr", x.measure = "fpr")
+plot(perf_FRED_final, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "plum4")
+abline(0, 1) #add a 45 degree line
+
+auc_FRED_final <- ROCR::performance(pred_FRED_final, measure = "auc")
+auc_FRED_final <- auc_FRED_final@y.values[[1]]
+auc_FRED_final 
+
+
+```
+
+We display the three final models ROC curves:
+
+```{r}
+plot(perf_full_final, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "darkorange")
+plot(perf_manual_final, add = TRUE, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "darkolivegreen")
+plot(perf_FRED_final, add = TRUE, main="ROC curve Admissions", xlab="Specificity",
+     ylab="Sensitivity", col = "plum4")
+abline(0, 1) #add a 45 degree line
+legend(0.6,0.6,
+       c('full', 'manual', 'FRED'),
+       col=c("darkorange", "darkolivegreen", "plum4"),lwd=3)
+```
+
